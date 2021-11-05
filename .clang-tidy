@@ -1,0 +1,36 @@
+---
+Checks: "
+  *,
+  -fuchsia-*,
+  -llvmlibc-*,
+  -modernize-use-trailing-return-type,
+  -llvm-header-guard,
+  -google-runtime-references,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -misc-non-private-member-variables-in-classes,
+  "
+
+WarningsAsErrors: ""
+HeaderFilterRegex: ""
+AnalyzeTemporaryDtors: false
+FormatStyle: file
+CheckOptions:
+  # https://releases.llvm.org/9.0.0/tools/clang/tools/extra/docs/clang-tidy/checks/bugprone-unhandled-self-assignment.html
+  - key: cert-oop54-cpp.WarnOnlyIfThisHasSuspiciousField
+    value: false
+  - key: google-readability-namespace-comments.ShortNamespaceLines
+    value: "0"
+  - key: llvm-qualified-auto.AddConstToQualified
+    value: true
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key: modernize-loop-convert.NamingStyle
+    value: CamelCase
+  - key: modernize-pass-by-value.IncludeStyle
+    value: google
+  - key: google-build-using-namespace,
+    value: False
+  - key: readability-implicit-bool-conversion
+    value: False
+---

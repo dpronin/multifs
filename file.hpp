@@ -39,7 +39,6 @@ private:
     struct Chunk {
         size_t start_off;
         size_t end_off;
-        mutable fuse_file_info fi;
         std::shared_ptr<IFileSystem> fs;
     };
 
@@ -49,7 +48,7 @@ private:
     std::vector<Chunk> chunks_;
     Descriptor desc_;
 
-    void init_desc(mode_t mode, int flags) noexcept;
+    void init_desc(mode_t mode, struct fuse_file_info* fi) noexcept;
     void truncate(size_t new_size) noexcept;
 
 public:
@@ -60,7 +59,7 @@ public:
         , fss_(begin, end)
         , fs_next_it_(fss_.begin())
     {
-        init_desc(mode, fi ? fi->flags : 0x0);
+        init_desc(mode, fi);
     }
     ~File() = default;
 

@@ -17,7 +17,7 @@ extern "C" {
 
 using namespace multifs;
 
-void File::init_desc(mode_t mode, int flags) noexcept
+void File::init_desc(mode_t mode, struct fuse_file_info* fi) noexcept
 {
     auto const* ctx = fuse_get_context();
     assert(ctx);
@@ -25,10 +25,12 @@ void File::init_desc(mode_t mode, int flags) noexcept
     desc_.owner_uid = ctx->uid;
     desc_.owner_gid = ctx->gid;
     desc_.mode      = S_IFREG | mode;
-    desc_.flags     = flags;
-    desc_.atime     = current_time();
-    desc_.mtime     = desc_.atime;
-    desc_.ctime     = desc_.atime;
+    if (fi && 0x0 == fi->fh) {
+        fi->fh = reinterpret_cast<uintptr_t>(new std::vector<fuse_file_info>{fss_.size(), *fi});
+    }
+    desc_.atime = current_time();
+    desc_.mtime = desc_.atime;
+    desc_.ctime = desc_.atime;
 }
 
 void File::truncate(size_t new_size) noexcept
@@ -47,8 +49,13 @@ int File::unlink()
 
 int File::chmod(mode_t mode, struct fuse_file_info* fi) noexcept
 {
-    for (auto& chunk : chunks_) {
-        if (auto const r = chunk.fs->chmod(path_.c_str(), mode, fi ? &chunk.fi : nullptr))
+    for (int i = 0; i < chunks_.size(); ++i) {
+        fuse_file_info mfi{};
+        if (fi && fi->fh) {
+            auto* v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+            mfi.fh  = (*v)[i].fh;
+        }
+        if (auto const r = chunks_[i].fs->chmod(path_.c_str(), mode, fi ? &mfi : nullptr))
             return r;
     }
     desc_.mode  = S_IFREG | mode;
@@ -58,8 +65,13 @@ int File::chmod(mode_t mode, struct fuse_file_info* fi) noexcept
 
 int File::chown(uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
 {
-    for (auto& chunk : chunks_) {
-        if (auto const r = chunk.fs->chown(path_.c_str(), uid, gid, fi ? &chunk.fi : nullptr))
+    for (int i = 0; i < chunks_.size(); ++i) {
+        fuse_file_info mfi{};
+        if (fi && fi->fh) {
+            auto* v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+            mfi.fh  = (*v)[i].fh;
+        }
+        if (auto const r = chunks_[i].fs->chown(path_.c_str(), uid, gid, fi ? &mfi : nullptr))
             return r;
     }
     desc_.owner_uid = uid;
@@ -70,23 +82,34 @@ int File::chown(uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
 
 int File::truncate(size_t new_size, struct fuse_file_info* fi)
 {
-    for (auto& chunk : chunks_) {
-        if (auto const r = chunk.fs->truncate(path_.c_str(), new_size, fi ? &chunk.fi : nullptr))
+    for (int i = 0; i < chunks_.size(); ++i) {
+        fuse_file_info mfi{};
+        if (fi && fi->fh) {
+            auto* v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+            mfi.fh  = (*v)[i].fh;
+        }
+        if (auto const r = chunks_[i].fs->truncate(path_.c_str(), new_size, fi ? &mfi : nullptr))
             return r;
     }
-    truncate(new_size);
     return 0;
 }
 
 int File::open(struct fuse_file_info* fi)
 {
-    for (auto& chunk : chunks_) {
-        if (fi) {
-            chunk.fi.flags = desc_.flags = fi->flags;
-            fi                           = &chunk.fi;
-        }
-        if (auto const r = chunk.fs->open(path_.c_str(), fi))
+    std::vector<fuse_file_info>* v{nullptr};
+    if (fi) {
+        if (0x0 == fi->fh)
+            fi->fh = reinterpret_cast<uintptr_t>(new std::vector<fuse_file_info>{fss_.size(), *fi});
+        v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+    }
+    for (int i = 0; i < chunks_.size(); ++i) {
+        fuse_file_info mfi{};
+        if (fi)
+            mfi.flags = (*v)[i].flags;
+        if (auto const r = chunks_[i].fs->open(path_.c_str(), fi ? &mfi : nullptr))
             return r;
+        if (v)
+            (*v)[i].fh = mfi.fh;
     }
     if (fi && (fi->flags & O_TRUNC) && (fi->flags & (O_WRONLY | O_RDWR)))
         truncate(0);
@@ -95,23 +118,32 @@ int File::open(struct fuse_file_info* fi)
 
 int File::release(struct fuse_file_info* fi) noexcept
 {
-    for (auto& chunk : chunks_) {
-        if (fi)
-            fi = &chunk.fi;
-        if (auto const r = chunk.fs->release(path_.c_str(), fi))
+    for (int i = 0; i < chunks_.size(); ++i) {
+        fuse_file_info mfi{};
+        if (fi && fi->fh) {
+            auto* v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+            mfi.fh  = (*v)[i].fh;
+        }
+        if (auto const r = chunks_[i].fs->release(path_.c_str(), fi ? &mfi : nullptr))
             return r;
     }
-    desc_.flags = 0x0;
+    if (fi && fi->fh) {
+        delete reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+        fi->fh = 0x0;
+    }
     return 0;
 }
 
 #ifdef HAVE_UTIMENSAT
 int File::utimens(const struct timespec ts[2], struct fuse_file_info* fi) noexcept
 {
-    for (auto& chunk : chunks_) {
-        if (fi)
-            fi = &chunk.fi;
-        chunk.fs->utimens(path_.c_str(), ts, fi);
+    for (int i = 0; i < chunks_.size(); ++i) {
+        fuse_file_info mfi{};
+        if (fi && fi->fh) {
+            auto* v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+            mfi.fh  = (*v)[i].fh;
+        }
+        chunks_[i].fs->utimens(path_.c_str(), ts, fi ? &mfi : nullptr);
     }
 
     auto const cur_time = current_time();
@@ -147,17 +179,23 @@ ssize_t File::write(char const* buf, size_t size, off_t offset, struct fuse_file
 
     size_t const initial_offset = offset = std::min(static_cast<size_t>(offset), desc_.size);
 
+    std::vector<fuse_file_info>* v{nullptr};
+    if (fi && 0 != fi->fh)
+        v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+
     for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const&chunk) { return offset < chunk.end_off; });
          0 != size && chunks_.end() != chunk_it;
          ++chunk_it) {
-        if (fi) {
-            chunk_it->fi.flags = fi->flags;
-            fi                 = &chunk_it->fi;
+
+        fuse_file_info mfi{};
+        if (v) {
+            mfi.fh    = (*v)[chunk_it - chunks_.begin()].fh;
+            mfi.flags = fi->flags;
         }
 
         auto const size_to_write = std::min(size, chunk_it->end_off - offset);
 
-        auto const r = chunk_it->fs->write(path_.c_str(), buf, size_to_write, offset - chunk_it->start_off, fi);
+        auto const r = chunk_it->fs->write(path_.c_str(), buf, size_to_write, offset - chunk_it->start_off, fi ? &mfi : nullptr);
         if (r < 0)
             return r;
         else if (size_to_write != r && chunk_it != std::prev(chunks_.end())) {
@@ -171,27 +209,27 @@ ssize_t File::write(char const* buf, size_t size, off_t offset, struct fuse_file
     }
 
     while (0 != size && fs_next_it_ != fss_.end()) {
-        chunks_.push_back(Chunk{static_cast<size_t>(offset), std::numeric_limits<size_t>::max(), {}, *fs_next_it_++});
+        chunks_.push_back(Chunk{static_cast<size_t>(offset), std::numeric_limits<size_t>::max(), *fs_next_it_++});
         auto chunk_it = chunks_.end() - 1;
         if (chunks_.size() >= 2)
             chunk_it[-1].end_off = chunk_it->start_off;
 
-        if (fi) {
-            chunk_it->fi.flags = desc_.flags;
-            fi                 = &chunk_it->fi;
-        }
+        fuse_file_info mfi{};
+        if (v)
+            mfi.flags = (*v)[chunk_it - chunks_.begin()].flags;
 
-        if (chunk_it->fs->create(path_.c_str(), desc_.mode, fi)) {
+        if (chunk_it->fs->create(path_.c_str(), desc_.mode, fi ? &mfi : nullptr)) {
             chunks_.erase(chunk_it);
             break;
         }
 
-        if (fi) {
-            chunk_it->fi.flags = fi->flags;
-            fi                 = &chunk_it->fi;
-        }
+        if (v)
+            (*v)[chunk_it - chunks_.begin()].fh = mfi.fh;
 
-        auto const r = chunk_it->fs->write(path_.c_str(), buf, size, 0, fi);
+        if (fi)
+            mfi.flags = fi->flags;
+
+        auto const r = chunk_it->fs->write(path_.c_str(), buf, size, 0, fi ? &mfi : nullptr);
         if (r < 0)
             return r;
 
@@ -215,15 +253,22 @@ ssize_t File::read(char* buf, size_t size, off_t offset, struct fuse_file_info* 
     offset = std::min(static_cast<size_t>(offset), desc_.size);
     size   = std::min(size, desc_.size - offset);
 
+    std::vector<fuse_file_info>* v;
+    if (fi && 0 != fi->fh)
+        v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
+
     for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const&chunk) { return offset < chunk.end_off; });
          0 != size && chunks_.end() != chunk_it;
          ++chunk_it) {
-        if (fi) {
-            chunk_it->fi.flags = fi->flags;
-            fi                 = &chunk_it->fi;
+
+        fuse_file_info mfi{};
+        if (v) {
+            mfi.fh    = (*v)[chunk_it - chunks_.begin()].fh;
+            mfi.flags = fi->flags;
         }
+
         auto const size_to_read = std::min(size, chunk_it->end_off - offset);
-        auto const r            = chunk_it->fs->read(path_.c_str(), buf, size_to_read, offset - chunk_it->start_off, fi);
+        auto const r            = chunk_it->fs->read(path_.c_str(), buf, size_to_read, offset - chunk_it->start_off, fi ? &mfi : nullptr);
         if (r < 0)
             return r;
         res += r;

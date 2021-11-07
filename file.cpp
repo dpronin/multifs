@@ -196,9 +196,11 @@ ssize_t File::write(char const* buf, size_t size, off_t offset, struct fuse_file
         auto const size_to_write = std::min(size, chunk_it->end_off - offset);
 
         auto const r = chunk_it->fs->write(path_.c_str(), buf, size_to_write, offset - chunk_it->start_off, fi ? &mfi : nullptr);
-        if (r < 0)
+        if (r < 0) {
+            if (-ENOSPC == r)
+                break;
             return r;
-        else if (size_to_write != r && chunk_it != std::prev(chunks_.end())) {
+        } else if (size_to_write != r && chunk_it != std::prev(chunks_.end())) {
             return res;
         }
 
@@ -230,8 +232,11 @@ ssize_t File::write(char const* buf, size_t size, off_t offset, struct fuse_file
             mfi.flags = fi->flags;
 
         auto const r = chunk_it->fs->write(path_.c_str(), buf, size, 0, fi ? &mfi : nullptr);
-        if (r < 0)
+        if (r < 0) {
+            if (-ENOSPC == r)
+                continue;
             return r;
+        }
 
         res += r;
         offset += r;

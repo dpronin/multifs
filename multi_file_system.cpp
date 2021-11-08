@@ -25,12 +25,12 @@ using namespace multifs;
 namespace
 {
 
-constexpr unsigned long kFUSESuperMagic = 0x65735546;
-constexpr unsigned long kBlockSize      = 4 * 1024UL;
-constexpr unsigned long kMaxName        = 255;
-constexpr unsigned long kMaxBlocks      = 1024 * 1024UL;
-constexpr unsigned long kMaxInode       = 1024 * 1024UL;
-constexpr unsigned long kFSID           = 0x0123456789098765;
+// constexpr unsigned long kFUSESuperMagic = 0x65735546;
+constexpr unsigned long kBlockSize = 4 * 1024UL;
+constexpr unsigned long kMaxName   = 255;
+// constexpr unsigned long kMaxBlocks      = 1024 * 1024UL;
+// constexpr unsigned long kMaxInode       = 1024 * 1024UL;
+constexpr unsigned long kFSID = 0x0123456789098765;
 
 } // anonymous namespace
 
@@ -40,13 +40,13 @@ void MultiFileSystem::statvs_init()
         .f_bsize  = kBlockSize, // Filesystem block size
         .f_frsize = kBlockSize, // Fragment size
 
-        .f_blocks = kMaxBlocks, // Size of fs in f_frsize units
-        .f_bfree  = kMaxBlocks, // Number of free blocks
-        .f_bavail = kMaxBlocks, // Number of free blocks for unprivileged users
+        .f_blocks = {} /*kMaxBlocks*/, // Size of fs in f_frsize units
+        .f_bfree  = {} /*kMaxBlocks*/, // Number of free blocks
+        .f_bavail = {} /*kMaxBlocks*/, // Number of free blocks for unprivileged users
 
-        .f_files  = kMaxInode, // Number of inodes
-        .f_ffree  = kMaxInode, // Number of free inodes
-        .f_favail = kMaxInode, // Number of free inodes for unprivileged users
+        .f_files  = {} /*kMaxInode*/, // Number of inodes
+        .f_ffree  = {} /*kMaxInode*/, // Number of free inodes
+        .f_favail = {} /*kMaxInode*/, // Number of free inodes for unprivileged users
 
         .f_fsid    = kFSID,    // Filesystem ID
         .f_namemax = kMaxName, // Maximum filename length
@@ -323,6 +323,19 @@ ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, o
 int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const noexcept
 {
     *stbuf = statvfs_;
+    for (auto const& fs : fss_) {
+        // clang-format off
+        struct statvfs stbuf_leaf {};
+        // clang-format on
+        if (auto const res = fs->statfs(path, &stbuf_leaf))
+            return res;
+        stbuf->f_blocks += stbuf_leaf.f_blocks * stbuf_leaf.f_bsize / stbuf->f_bsize;
+        stbuf->f_bfree += stbuf_leaf.f_bfree * stbuf_leaf.f_bsize / stbuf->f_bsize;
+        stbuf->f_bavail += stbuf_leaf.f_bavail * stbuf_leaf.f_bsize / stbuf->f_bsize;
+        stbuf->f_files += stbuf_leaf.f_files;
+        stbuf->f_ffree += stbuf_leaf.f_ffree;
+        stbuf->f_favail += stbuf_leaf.f_favail;
+    }
     return 0;
 }
 

@@ -212,9 +212,6 @@ int MultiFileSystem::unlink(char const* path)
 
     nodes_.erase(it);
 
-    // statvfs_.f_bfree = memfs.statvfs.f_bavail += blocks;
-    statvfs_.f_favail = ++statvfs_.f_ffree;
-
     return 0;
 }
 

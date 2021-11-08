@@ -10,7 +10,7 @@ extern "C" {
 
 using namespace multifs;
 
-Symlink::Symlink(std::filesystem::path target)
+Symlink::Symlink(std::filesystem::path target) noexcept
     : target_(std::move(target))
 {
     auto const* ctx = fuse_get_context();
@@ -22,7 +22,7 @@ Symlink::Symlink(std::filesystem::path target)
     desc_.ctime     = desc_.atime;
 }
 
-int Symlink::chown(uid_t uid, gid_t gid, struct fuse_file_info* /*fi*/) noexcept
+int Symlink::chown(uid_t uid, gid_t gid) noexcept
 {
     desc_.owner_uid = uid;
     desc_.owner_gid = gid;
@@ -31,7 +31,7 @@ int Symlink::chown(uid_t uid, gid_t gid, struct fuse_file_info* /*fi*/) noexcept
 }
 
 #ifdef HAVE_UTIMENSAT
-int Symlink::utimens(const struct timespec ts[2], struct fuse_file_info* /*fi*/) noexcept
+int Symlink::utimens(const struct timespec ts[2]) noexcept
 {
     auto const cur_time = current_time();
 

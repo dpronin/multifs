@@ -46,7 +46,7 @@ public:
     virtual ssize_t write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi)                                    = 0;
     virtual int statfs(char const* path, struct statvfs* stbuf) const noexcept                                                                        = 0;
     virtual int release(char const* path, struct fuse_file_info* fi) noexcept                                                                         = 0;
-    virtual int fsync(char const* path, int isdatasync, struct fuse_file_info* fi)                                                                    = 0;
+    virtual int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept                                                           = 0;
 #ifdef HAVE_UTIMENSAT
     virtual int utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* fi) noexcept = 0;
 #endif // HAVE_UTIMENSAT

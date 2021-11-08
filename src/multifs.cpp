@@ -128,7 +128,7 @@ int multifs_chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noex
         out << ", fi->flags 0" << std::oct << fi->flags << std::dec;
     out << std::endl;
 #endif
-    return wrap([](auto... args) { return __FS__->chmod(args...); }, path, mode, fi);
+    return __FS__->chmod(path, mode, fi);
 }
 
 int multifs_chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
@@ -139,7 +139,7 @@ int multifs_chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info*
         out << ", fi->flags 0" << std::oct << fi->flags << std::dec;
     out << std::endl;
 #endif
-    return wrap([](auto... args) { return __FS__->chown(args...); }, path, uid, gid, fi);
+    return __FS__->chown(path, uid, gid, fi);
 }
 
 int multifs_truncate(char const* path, off_t size, struct fuse_file_info* fi) noexcept
@@ -213,7 +213,7 @@ int multifs_fsync(char const* path, int isdatasync, struct fuse_file_info* fi) n
         out << ", fi->flags 0" << std::oct << fi->flags << std::dec;
     out << std::endl;
 #endif
-    return wrap([](auto... args) { return __FS__->fsync(args...); }, path, isdatasync, fi);
+    return __FS__->fsync(path, isdatasync, fi);
 }
 
 int multifs_readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) noexcept

@@ -210,7 +210,11 @@ int FileSystemReflector::release(char const*, struct fuse_file_info* fi) noexcep
     return 0;
 }
 
-int FileSystemReflector::fsync(char const* /*path*/, int /*isdatasync*/, struct fuse_file_info* /*fi*/) { return 0; }
+int FileSystemReflector::fsync(char const* /*path*/, int /*isdatasync*/, struct fuse_file_info* /*fi*/) noexcept
+{
+    // INFO: the function may not be implemented
+    return 0;
+}
 
 #ifdef HAVE_UTIMENSAT
 int FileSystemReflector::utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* /*fi*/) noexcept

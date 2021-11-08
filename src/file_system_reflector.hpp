@@ -49,7 +49,7 @@ public:
     ssize_t write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* fi) override;
     int statfs(char const* path, struct statvfs* stbuf) const noexcept override;
     int release(char const* path, struct fuse_file_info* fi) noexcept override;
-    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) override;
+    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept override;
 #ifdef HAVE_UTIMENSAT
     int utimens(const char* path, const struct timespec ts[2], struct fuse_file_info* fi) noexcept override;
 #endif // HAVE_UTIMENSAT

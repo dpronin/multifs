@@ -298,3 +298,12 @@ off_t File::lseek(off_t off, int whence, struct fuse_file_info* /*fi*/) const no
             return -EINVAL;
     }
 }
+
+int File::fsync(int isdatasync, struct fuse_file_info* fi) noexcept
+{
+    for (auto const& chunk : chunks_) {
+        if (auto const r = chunk.fs->fsync(path_.c_str(), isdatasync, nullptr))
+            return r;
+    }
+    return 0;
+}

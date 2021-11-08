@@ -23,12 +23,11 @@ private:
     gid_t owner_gid_;
     std::list<std::shared_ptr<IFileSystem>> fss_;
 
-    using Node = std::variant<File, Symlink>;
-    std::unordered_map<std::string, std::shared_ptr<Node>> nodes_;
+    using INode = std::variant<File, Symlink>;
+    std::unordered_map<std::string, std::shared_ptr<INode>> inodes_;
 
     struct statvfs statvfs_;
 
-private:
     void statvs_init() noexcept;
 
 public:
@@ -71,7 +70,7 @@ public:
     ssize_t write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) override;
     int statfs(char const* path, struct statvfs* stbuf) const noexcept override;
     int release(char const* path, struct fuse_file_info* fi) noexcept override;
-    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) override;
+    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept override;
 #ifdef HAVE_UTIMENSAT
     int utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* fi) noexcept override;
 #endif // HAVE_UTIMENSAT

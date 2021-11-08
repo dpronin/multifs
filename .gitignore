@@ -2,3 +2,4 @@
 build/
 fuse-*/build
 fuse-*/doc
+*.sublime-*

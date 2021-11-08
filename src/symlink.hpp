@@ -11,10 +11,6 @@
 #include "file_system_interface.hpp"
 #include "utilities.hpp"
 
-extern "C" {
-#include "fuse.h"
-} // extern "C"
-
 namespace multifs
 {
 
@@ -37,7 +33,7 @@ private:
 
 public:
     Symlink() = default;
-    explicit Symlink(std::filesystem::path target);
+    explicit Symlink(std::filesystem::path target) noexcept;
 
     Symlink(Symlink const&) = default;
     Symlink& operator=(Symlink const&) = default;
@@ -48,9 +44,8 @@ public:
     [[nodiscard]] auto const& target() const noexcept { return target_; }
     [[nodiscard]] auto const& desc() const noexcept { return desc_; }
 
-    int chown(uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept;
-
-    int utimens(const struct timespec ts[2], struct fuse_file_info* fi) noexcept;
+    int chown(uid_t uid, gid_t gid) noexcept;
+    int utimens(const struct timespec ts[2]) noexcept;
 };
 
 } // namespace multifs

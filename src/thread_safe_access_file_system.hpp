@@ -157,7 +157,7 @@ public:
         return fs_->release(path, fi);
     }
 
-    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) override
+    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept override
     {
         std::lock_guard g{lock_};
         return fs_->fsync(path, isdatasync, fi);

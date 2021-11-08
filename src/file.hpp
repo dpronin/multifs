@@ -79,6 +79,7 @@ public:
     ssize_t write(char const* buf, size_t size, off_t offset, struct fuse_file_info* fi);
     ssize_t read(char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept;
     int release(struct fuse_file_info* fi) noexcept;
+    int fsync(int isdatasync, struct fuse_file_info* fi) noexcept;
 
 #ifdef HAVE_UTIMENSAT
     int utimens(const struct timespec ts[2], struct fuse_file_info* fi) noexcept;

@@ -34,7 +34,7 @@ constexpr unsigned long kFSID = 0x0123456789098765;
 
 } // anonymous namespace
 
-void MultiFileSystem::statvs_init()
+void MultiFileSystem::statvs_init() noexcept
 {
     statvfs_ = {
         .f_bsize  = kBlockSize, // Filesystem block size

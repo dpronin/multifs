@@ -29,7 +29,7 @@ private:
     struct statvfs statvfs_;
 
 private:
-    void statvs_init();
+    void statvs_init() noexcept;
 
 public:
     template <typename InputIterator>

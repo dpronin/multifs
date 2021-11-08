@@ -42,7 +42,7 @@ public:
     template <typename T>
     int operator()(T const&) const noexcept
     {
-        static_assert(dependent_false_v<T>, "unhandled type T to handle 'read'");
+        static_assert(dependent_false_v<T>, "unhandled type T to handle 'readlink'");
         return 0;
     }
 };

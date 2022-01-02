@@ -1,4 +1,5 @@
 find_package(Threads REQUIRED)
+find_package(libfuse REQUIRED)
 
 add_executable(multifs
     file.cpp
@@ -28,14 +29,11 @@ add_executable(multifs
     symlink.hpp
     thread_safe_access_file_system.hpp
 )
-add_dependencies(multifs libfuse)
 
-target_include_directories(multifs PRIVATE ${FUSE_INCLUDE_DIR})
 target_link_libraries(multifs PRIVATE
-    ${FUSE_LIB_DIR}/libfuse3.a
+    libfuse::libfuse
     Threads::Threads
     ${CMAKE_DL_LIBS})
 # shared_lock does not work with glibc linked statically
 # target_link_options(multifs PRIVATE -static)
 target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=34)
-target_compile_options(multifs PRIVATE PRIVATE "SHELL:-include ${FUSE_DIR}/build/config.h")

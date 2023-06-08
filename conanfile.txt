@@ -1,0 +1,9 @@
+[requires]
+libfuse/[~3.10]
+
+[generators]
+CMakeToolchain
+CMakeDeps
+
+[layout]
+cmake_layout

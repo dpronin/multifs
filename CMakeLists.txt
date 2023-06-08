@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 project(multifs
         VERSION 1.0.1
         LANGUAGES CXX C

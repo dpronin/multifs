@@ -2,6 +2,9 @@ find_package(Threads REQUIRED)
 find_package(libfuse REQUIRED)
 
 add_executable(multifs
+    factory_interface.hpp
+    factory_shared_interface.hpp
+    factory_unique_interface.hpp
     file.cpp
     file.hpp
     file_system_interface.hpp
@@ -28,6 +31,7 @@ add_executable(multifs
     symlink.cpp
     symlink.hpp
     thread_safe_access_file_system.hpp
+    rvwrap.hpp
 )
 
 target_link_libraries(multifs PRIVATE

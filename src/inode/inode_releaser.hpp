@@ -10,7 +10,7 @@ extern "C" {
 #include "fuse.h"
 } // extern "C"
 
-namespace multifs
+namespace multifs::inode
 {
 
 class INodeReleaser
@@ -39,4 +39,4 @@ public:
     }
 };
 
-} // namespace multifs
+} // namespace multifs::inode

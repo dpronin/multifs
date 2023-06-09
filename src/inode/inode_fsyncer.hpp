@@ -10,7 +10,7 @@ extern "C" {
 #include "fuse.h"
 } // extern "C"
 
-namespace multifs
+namespace multifs::inode
 {
 
 class INodeFsyncer
@@ -41,4 +41,4 @@ public:
     }
 };
 
-} // namespace multifs
+} // namespace multifs::inode

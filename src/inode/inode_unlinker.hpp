@@ -4,7 +4,7 @@
 #include "symlink.hpp"
 #include "utilities.hpp"
 
-namespace multifs
+namespace multifs::inode
 {
 
 class INodeUnlinker
@@ -21,4 +21,4 @@ public:
     }
 };
 
-} // namespace multifs
+} // namespace multifs::inode

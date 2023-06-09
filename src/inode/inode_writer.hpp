@@ -13,7 +13,7 @@ extern "C" {
 #include "fuse.h"
 } // extern "C"
 
-namespace multifs
+namespace multifs::inode
 {
 
 class INodeWriter
@@ -48,4 +48,4 @@ public:
     }
 };
 
-} // namespace multifs
+} // namespace multifs::inode

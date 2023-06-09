@@ -10,7 +10,7 @@ extern "C" {
 #include "fuse.h"
 } // extern "C"
 
-namespace multifs
+namespace multifs::inode
 {
 
 class INodeUtimenser
@@ -37,4 +37,4 @@ public:
     }
 };
 
-} // namespace multifs
+} // namespace multifs::inode

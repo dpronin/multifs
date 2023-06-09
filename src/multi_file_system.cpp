@@ -42,7 +42,7 @@ using namespace multifs;
 namespace
 {
 
-INodeUnlinker __unlinker__;
+inode::INodeUnlinker __unlinker__;
 
 // constexpr unsigned long kFUSESuperMagic = 0x65735546;
 constexpr unsigned long kBlockSize = 4 * 1024UL;
@@ -122,7 +122,7 @@ int MultiFileSystem::readlink(char const* path, char* buf, size_t size) const no
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeLinkReader{buf, size}, *it->second);
+    return std::visit(inode::INodeLinkReader{buf, size}, *it->second);
 }
 
 int MultiFileSystem::mknod(char const* path, mode_t mode, dev_t rdev)
@@ -230,7 +230,7 @@ int MultiFileSystem::chmod(char const* path, mode_t mode, struct fuse_file_info*
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeChmodder{mode, fi}, *it->second);
+    return std::visit(inode::INodeChmodder{mode, fi}, *it->second);
 }
 
 int MultiFileSystem::chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
@@ -238,7 +238,7 @@ int MultiFileSystem::chown(char const* path, uid_t uid, gid_t gid, struct fuse_f
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeChowner{uid, gid, fi}, *it->second);
+    return std::visit(inode::INodeChowner{uid, gid, fi}, *it->second);
 }
 
 int MultiFileSystem::truncate(char const* path, off_t size, struct fuse_file_info* fi)
@@ -246,7 +246,7 @@ int MultiFileSystem::truncate(char const* path, off_t size, struct fuse_file_inf
     auto it = inodes_.find(path + 1);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeTruncater{size, fi}, *it->second);
+    return std::visit(inode::INodeTruncater{size, fi}, *it->second);
 }
 
 int MultiFileSystem::open(char const* path, struct fuse_file_info* fi)
@@ -254,7 +254,7 @@ int MultiFileSystem::open(char const* path, struct fuse_file_info* fi)
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeOpener{fi}, *it->second);
+    return std::visit(inode::INodeOpener{fi}, *it->second);
 }
 
 int MultiFileSystem::create(char const* path, mode_t mode, struct fuse_file_info* fi)
@@ -267,7 +267,7 @@ ssize_t MultiFileSystem::read(char const* path, char* buf, size_t size, off_t of
     auto const it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeReader{buf, size, offset, fi}, *it->second);
+    return std::visit(inode::INodeReader{buf, size, offset, fi}, *it->second);
 }
 
 ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi)
@@ -275,7 +275,7 @@ ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, o
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeWriter{buf, size, offset, fi}, *it->second);
+    return std::visit(inode::INodeWriter{buf, size, offset, fi}, *it->second);
 }
 
 int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const noexcept
@@ -302,7 +302,7 @@ int MultiFileSystem::release(char const* path, struct fuse_file_info* fi) noexce
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeReleaser{fi}, *it->second);
+    return std::visit(inode::INodeReleaser{fi}, *it->second);
 }
 
 int MultiFileSystem::fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept
@@ -310,7 +310,7 @@ int MultiFileSystem::fsync(char const* path, int isdatasync, struct fuse_file_in
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeFsyncer{isdatasync, fi}, *it->second);
+    return std::visit(inode::INodeFsyncer{isdatasync, fi}, *it->second);
 }
 
 #ifdef HAVE_UTIMENSAT
@@ -338,5 +338,5 @@ off_t MultiFileSystem::lseek(char const* path, off_t off, int whence, struct fus
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(INodeLseeker{off, whence, fi}, *it->second);
+    return std::visit(inode::INodeLseeker{off, whence, fi}, *it->second);
 }

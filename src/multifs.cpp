@@ -13,6 +13,7 @@
 
 #include "file_system_interface.hpp"
 #include "file_system_reflector.hpp"
+#include "fs_reflector_factory.hpp"
 #include "log.hpp"
 #include "multi_file_system.hpp"
 #include "thread_safe_access_file_system.hpp"

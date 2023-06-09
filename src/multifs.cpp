@@ -82,6 +82,8 @@ std::unique_ptr<IFSFactory> make_fs_factory()
     return fsf;
 }
 
+auto* multifs_make(std::unique_ptr<IFileSystem> fs) noexcept { return new FileSystemNoexcept(std::move(fs)); }
+
 auto& multifs_to_fs(void* private_data) noexcept { return *static_cast<FileSystemNoexcept*>(private_data); }
 
 auto& multifs_get_fs() noexcept { return multifs_to_fs(fuse_get_context()->private_data); }
@@ -145,7 +147,7 @@ void* multifs_init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcep
     if (!__logp__.empty())
         fs = std::make_unique<LoggedFileSystem>(std::move(fs), std::move(__logp__));
 
-    return new FileSystemNoexcept(std::move(fs));
+    return multifs_make(std::move(fs));
 }
 
 void multifs_destroy(void* private_data)

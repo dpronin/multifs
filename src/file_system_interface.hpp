@@ -19,10 +19,10 @@ public:
     IFileSystem()          = default;
     virtual ~IFileSystem() = default;
 
-    IFileSystem(IFileSystem const&) = default;
+    IFileSystem(IFileSystem const&)            = default;
     IFileSystem& operator=(IFileSystem const&) = default;
 
-    IFileSystem(IFileSystem&&) noexcept = default;
+    IFileSystem(IFileSystem&&) noexcept            = default;
     IFileSystem& operator=(IFileSystem&&) noexcept = default;
 
     virtual int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept                                               = 0;
@@ -33,7 +33,6 @@ public:
     virtual int symlink(char const* from, char const* to)                                                                                             = 0;
     virtual int rename(char const* from, char const* to, unsigned int flags)                                                                          = 0;
     virtual int link(char const* from, char const* to)                                                                                                = 0;
-    virtual void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept                                                                 = 0;
     virtual int access(char const* path, int mask) const noexcept                                                                                     = 0;
     virtual int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) const = 0;
     virtual int unlink(char const* path)                                                                                                              = 0;

@@ -22,10 +22,10 @@ public:
     explicit FileSystemReflector(std::filesystem::path mount_point);
     ~FileSystemReflector() override = default;
 
-    FileSystemReflector(FileSystemReflector const&) = default;
+    FileSystemReflector(FileSystemReflector const&)            = default;
     FileSystemReflector& operator=(FileSystemReflector const&) = default;
 
-    FileSystemReflector(FileSystemReflector&&) noexcept = default;
+    FileSystemReflector(FileSystemReflector&&) noexcept            = default;
     FileSystemReflector& operator=(FileSystemReflector&&) noexcept = default;
 
     int getattr(const char* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override;
@@ -36,7 +36,6 @@ public:
     int symlink(const char* from, const char* to) override;
     int rename(const char* from, const char* to, unsigned int flags) override;
     int link(char const* from, char const* to) override;
-    void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept override;
     int access(char const* path, int mask) const noexcept override;
     int readdir(const char* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) const override;
     int unlink(const char* path) override;

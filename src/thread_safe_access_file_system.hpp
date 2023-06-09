@@ -25,10 +25,10 @@ public:
     }
     ~ThreadSafeAccessFileSystem() override = default;
 
-    ThreadSafeAccessFileSystem(ThreadSafeAccessFileSystem const&) = delete;
+    ThreadSafeAccessFileSystem(ThreadSafeAccessFileSystem const&)            = delete;
     ThreadSafeAccessFileSystem& operator=(ThreadSafeAccessFileSystem const&) = delete;
 
-    ThreadSafeAccessFileSystem(ThreadSafeAccessFileSystem&&) = delete;
+    ThreadSafeAccessFileSystem(ThreadSafeAccessFileSystem&&)            = delete;
     ThreadSafeAccessFileSystem& operator=(ThreadSafeAccessFileSystem&&) = delete;
 
     int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override
@@ -77,12 +77,6 @@ public:
     {
         std::lock_guard g{lock_};
         return fs_->link(from, to);
-    }
-
-    void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept override
-    {
-        std::lock_guard g{lock_};
-        return fs_->init(conn, cfg);
     }
 
     int access(char const* path, int mask) const noexcept override

@@ -55,7 +55,6 @@ public:
     int symlink(char const* from, char const* to) override;
     int rename(char const* from, char const* to, unsigned int flags) override;
     int link(char const* from, char const* to) override;
-    void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept override;
     int access(char const* path, int mask) const noexcept override;
     int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) const override;
     int unlink(char const* path) override;

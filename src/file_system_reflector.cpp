@@ -87,12 +87,6 @@ int FileSystemReflector::link(char const* from, char const* to)
     return res == -1 ? -errno : 0;
 }
 
-void* FileSystemReflector::init(struct fuse_conn_info* /*conn*/, struct fuse_config* cfg) noexcept
-{
-    cfg->kernel_cache = 1;
-    return NULL;
-}
-
 int FileSystemReflector::access(char const* path, int mask) const noexcept
 {
     auto const res = ::access(to_path(path).c_str(), mask);

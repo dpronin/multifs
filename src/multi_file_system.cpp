@@ -180,12 +180,6 @@ int MultiFileSystem::link(char const* from, char const* to)
     return inodes_.emplace(to, from_it->second).second ? 0 : -EEXIST;
 }
 
-void* MultiFileSystem::init(struct fuse_conn_info* /*conn*/, struct fuse_config* cfg) noexcept
-{
-    cfg->kernel_cache = 1;
-    return NULL;
-}
-
 int MultiFileSystem::access(char const* path, int mask) const noexcept
 {
     if (std::strcmp(path, "/") == 0 || std::strcmp(path + 1, ".") == 0 || std::strcmp(path + 1, "..") == 0 || inodes_.count(path))

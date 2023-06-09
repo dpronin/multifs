@@ -237,8 +237,12 @@ void* multifs_init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcep
 #ifndef NDEBUG
     out << "init " << std::endl;
 #endif
+
+    cfg->kernel_cache = 1;
+
     __FS__ = __FSF__->create_unique();
-    return __FS__->init(conn, cfg);
+
+    return NULL;
 }
 
 int multifs_access(char const* path, int mask) noexcept

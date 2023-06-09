@@ -16,6 +16,7 @@
 #include "fs_reflector_factory.hpp"
 #include "log.hpp"
 #include "multi_file_system.hpp"
+#include "multi_fs_factory.hpp"
 #include "thread_safe_access_file_system.hpp"
 
 extern "C" {

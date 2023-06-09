@@ -27,12 +27,13 @@ add_executable(multifs
     log.hpp
     multi_file_system.cpp
     multi_file_system.hpp
+    multi_fs_factory.hpp
     multifs.cpp
     passthrough_helpers.hpp
+    rvwrap.hpp
     symlink.cpp
     symlink.hpp
     thread_safe_access_file_system.hpp
-    rvwrap.hpp
 )
 
 target_link_libraries(multifs PRIVATE

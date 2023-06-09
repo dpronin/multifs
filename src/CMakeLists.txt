@@ -10,6 +10,7 @@ add_executable(multifs
     file_system_interface.hpp
     file_system_reflector.cpp
     file_system_reflector.hpp
+    fs_factory_interface.hpp
     fs_reflector_factory.hpp
     inode/inode_chmodder.hpp
     inode/inode_chowner.hpp

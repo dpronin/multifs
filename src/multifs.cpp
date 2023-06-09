@@ -44,12 +44,15 @@ constexpr std::string_view kKeyFSPrefix = "--fs=";
     {                                                                                                                                                          \
         t, offsetof(struct options, p), 1                                                                                                                      \
     }
-static const struct fuse_opt option_spec[] = {
+
+const struct fuse_opt option_spec[] = {
     OPTION("-h", show_help),
     OPTION("--help", show_help),
     FUSE_OPT_KEY(kKeyFSPrefix.data(), KEY_FS),
     FUSE_OPT_END,
 };
+
+#undef OPTION
 
 int multifs_getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept
 {

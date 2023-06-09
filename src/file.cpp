@@ -13,7 +13,6 @@
 
 #include "utilities.hpp"
 
-
 using namespace multifs;
 
 void File::init_desc(mode_t mode, struct fuse_file_info* fi) noexcept

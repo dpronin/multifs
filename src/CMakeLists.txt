@@ -34,6 +34,7 @@ add_executable(multifs
     multifs.cpp
     passthrough_helpers.hpp
     rvwrap.hpp
+    scope_exit.hpp
     symlink.cpp
     symlink.hpp
     thread_safe_access_file_system.hpp

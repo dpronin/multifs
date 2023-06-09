@@ -6,6 +6,8 @@
 
 #include <fuse.h>
 
+#include "utilities.hpp"
+
 using namespace multifs;
 
 Symlink::Symlink(std::filesystem::path target) noexcept

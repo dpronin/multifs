@@ -1,11 +1,11 @@
 #pragma once
 
+#include <filesystem>
+#include <fstream>
 #include <memory>
-#include <ostream>
 #include <utility>
 
 #include "file_system_interface.hpp"
-#include "log.hpp"
 
 namespace multifs
 {
@@ -14,12 +14,12 @@ class LoggedFileSystem final : public IFileSystem
 {
 private:
     std::shared_ptr<IFileSystem> fs_;
-    std::ostream& out_;
+    mutable std::ofstream out_;
 
 public:
-    explicit LoggedFileSystem(std::shared_ptr<IFileSystem> fs, std::ostream& out)
+    explicit LoggedFileSystem(std::shared_ptr<IFileSystem> fs, std::filesystem::path const& logpath)
         : fs_(std::move(fs))
-        , out_(out)
+        , out_(logpath)
     {
         if (!fs_)
             throw std::invalid_argument("fs provided cannot be empty");

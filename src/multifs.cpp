@@ -21,7 +21,6 @@
 #include "file_system_reflector.hpp"
 #include "fs_factory_interface.hpp"
 #include "fs_reflector_factory.hpp"
-#include "log.hpp"
 #include "logged_file_system.hpp"
 #include "multi_file_system.hpp"
 #include "multi_fs_factory.hpp"
@@ -39,9 +38,11 @@ struct options {
 } opts;
 
 std::list<std::filesystem::path> __mpts__;
+std::filesystem::path __logp__;
 
-enum { KEY_FS };
-constexpr std::string_view kKeyFSPrefix = "--fs=";
+enum { KEY_FS, KEY_LOG };
+constexpr std::string_view kKeyFSPrefix  = "--fs=";
+constexpr std::string_view kKeyLogPrefix = "--log=";
 
 #define OPTION(t, p)                                                                                                                                           \
     {                                                                                                                                                          \
@@ -52,6 +53,7 @@ const struct fuse_opt option_spec[] = {
     OPTION("-h", show_help),
     OPTION("--help", show_help),
     FUSE_OPT_KEY(kKeyFSPrefix.data(), KEY_FS),
+    FUSE_OPT_KEY(kKeyLogPrefix.data(), KEY_LOG),
     FUSE_OPT_END,
 };
 
@@ -108,17 +110,16 @@ void* multifs_init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcep
 {
     std::unique_ptr<IFileSystem> fs;
 
-#ifndef NDEBUG
-    out << "init " << std::endl;
-#endif
+    // #ifndef NDEBUG
+    //     out << "init: debug " << cfg->debug << std::endl;
+    // #endif
 
     cfg->kernel_cache = 1;
 
     fs = __fs_factory__->create_unique();
 
-#ifndef NDEBUG
-    fs = std::make_unique<LoggedFileSystem>(std::move(fs), out);
-#endif
+    if (!__logp__.empty())
+        fs = std::make_unique<LoggedFileSystem>(std::move(fs), std::move(__logp__));
 
     __FS__ = std::make_unique<FileSystemNoexcept>(std::move(fs));
 
@@ -147,8 +148,9 @@ void show_help(std::string_view progname)
     std::cout << "usage: " << progname << " [options] <mountpoint>\n\n";
     std::cout << "Multi File-system specific options:\n"
               << "    --fs=<path>            path to a single mount point to "
-                 "combine it with others within the Multi File-system"
-              << "\n\n";
+                 "combine it with others within the Multi File-system\n"
+              << "    --log=<path>           path to a file where multifs will log operations\n"
+              << "\n";
     std::cout.flush();
 }
 
@@ -159,6 +161,12 @@ try {
             auto svarg = std::string_view{arg};
             svarg.remove_prefix(kKeyFSPrefix.size());
             __mpts__.push_back(svarg);
+            return 0;
+        }
+        case KEY_LOG: {
+            auto svarg = std::string_view{arg};
+            svarg.remove_prefix(kKeyLogPrefix.size());
+            __logp__ = svarg;
             return 0;
         }
         default:
@@ -177,6 +185,9 @@ inline std::unique_ptr<IFSFactory> make_fs_factory()
     std::unique_ptr<IFSFactory> fsf;
 
     std::ranges::transform(__mpts__, __mpts__.begin(), [](auto const& mp) { return std::filesystem::absolute(mp).lexically_normal(); });
+
+    if (!__logp__.empty())
+        __logp__ = std::filesystem::absolute(__logp__).lexically_normal();
 
     if (__mpts__.empty())
         throw std::runtime_error("there are no single File-systems to combine to Multi File-system");

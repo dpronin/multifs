@@ -117,7 +117,7 @@ void* multifs_init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcep
     fs = __fs_factory__->create_unique();
 
 #ifndef NDEBUG
-    fs = std::make_unique<LoggedFileSystem>(std::move(fs));
+    fs = std::make_unique<LoggedFileSystem>(std::move(fs), out);
 #endif
 
     __FS__ = std::make_unique<FileSystemNoexcept>(std::move(fs));

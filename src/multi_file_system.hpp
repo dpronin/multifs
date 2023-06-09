@@ -31,22 +31,20 @@ private:
     void statvs_init() noexcept;
 
 public:
-    template <typename InputIterator>
-    explicit MultiFileSystem(uid_t owner_uid, gid_t owner_gid, InputIterator begin, InputIterator end)
+    template <typename InputIt>
+    explicit MultiFileSystem(uid_t owner_uid, gid_t owner_gid, InputIt begin, InputIt end)
         : owner_uid_(owner_uid)
         , owner_gid_(owner_gid)
         , fss_(begin, end)
     {
         statvs_init();
     }
-
-    explicit MultiFileSystem(uid_t owner_uid, gid_t owner_gid, std::list<std::unique_ptr<IFileSystem>> fsystems);
     ~MultiFileSystem() override = default;
 
-    MultiFileSystem(MultiFileSystem const&) = delete;
+    MultiFileSystem(MultiFileSystem const&)            = delete;
     MultiFileSystem& operator=(MultiFileSystem const&) = delete;
 
-    MultiFileSystem(MultiFileSystem&&) noexcept = default;
+    MultiFileSystem(MultiFileSystem&&) noexcept            = default;
     MultiFileSystem& operator=(MultiFileSystem&&) noexcept = default;
 
     int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override;

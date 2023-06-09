@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 
@@ -6,6 +7,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
+#include <ranges>
 #include <string_view>
 #include <utility>
 
@@ -13,11 +15,11 @@
 
 #include "file_system_interface.hpp"
 #include "file_system_reflector.hpp"
+#include "fs_factory_interface.hpp"
 #include "fs_reflector_factory.hpp"
 #include "log.hpp"
 #include "multi_file_system.hpp"
 #include "multi_fs_factory.hpp"
-#include "thread_safe_access_file_system.hpp"
 
 extern "C" {
 #include "fuse.h"
@@ -28,6 +30,7 @@ using namespace multifs;
 namespace
 {
 
+std::unique_ptr<IFSFactory> __FSF__;
 std::unique_ptr<IFileSystem> __FS__;
 
 struct options {
@@ -234,6 +237,7 @@ void* multifs_init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcep
 #ifndef NDEBUG
     out << "init " << std::endl;
 #endif
+    __FS__ = __FSF__->create_unique();
     return __FS__->init(conn, cfg);
 }
 
@@ -320,33 +324,22 @@ try {
     exit(EXIT_FAILURE);
 }
 
-inline std::unique_ptr<IFileSystem> make_file_system()
+inline std::unique_ptr<IFSFactory> make_fs_factory()
 {
-    std::unique_ptr<IFileSystem> fs;
+    std::unique_ptr<IFSFactory> fsf;
+    std::vector<std::filesystem::path> mps;
 
-    std::list<std::unique_ptr<IFileSystem>> fsystems;
+    std::ranges::transform(__mpts__, std::back_inserter(mps), [](auto const& mp) { return std::filesystem::absolute(mp).lexically_normal(); });
 
-    for (auto const& mpt : __mpts__) {
-        try {
-            fsystems.push_back(std::make_unique<FileSystemReflector>(std::filesystem::absolute(mpt).lexically_normal()));
-        } catch (std::exception const& ex) {
-            std::cerr << "could't use " << mpt
-                      << " as a mount point of a single File-system to combine to "
-                         "Multi File-system, reason: "
-                      << ex.what() << '\n';
-        }
-    }
-
-    if (fsystems.empty())
+    if (__mpts__.empty())
         throw std::runtime_error("there are no single File-systems to combine to Multi File-system");
 
-    if (1 == fsystems.size())
-        fs = std::move(fsystems.front());
+    if (1 == __mpts__.size())
+        fsf = std::make_unique<FSReflectorFactory>(std::move(__mpts__.front()));
     else
-        fs = std::make_unique<ThreadSafeAccessFileSystem>(
-            std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fsystems.begin()), std::make_move_iterator(fsystems.end())));
+        fsf = std::make_unique<MultiFSFactory>(getuid(), getgid(), std::make_move_iterator(__mpts__.begin()), std::make_move_iterator(__mpts__.end()));
 
-    return fs;
+    return fsf;
 }
 
 fuse_operations const multifs_oper = {
@@ -405,7 +398,7 @@ int main(int argc, char* argv[])
         assert(fuse_opt_add_arg(&args, "--help") == 0);
         args.argv[0][0] = '\0';
     } else {
-        __FS__ = make_file_system();
+        __FSF__ = make_fs_factory();
     }
 
     auto const ret = fuse_main(args.argc, args.argv, &multifs_oper, NULL);

@@ -8,6 +8,8 @@ add_executable(multifs
     file.cpp
     file.hpp
     file_system_interface.hpp
+    file_system_noexcept.hpp
+    file_system_noexcept_interface.hpp
     file_system_reflector.cpp
     file_system_reflector.hpp
     fs_factory_interface.hpp
@@ -36,6 +38,7 @@ add_executable(multifs
     symlink.cpp
     symlink.hpp
     thread_safe_access_file_system.hpp
+    wrap.hpp
 )
 
 target_link_libraries(multifs PRIVATE

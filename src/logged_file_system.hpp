@@ -34,61 +34,61 @@ public:
 
     int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const override
     {
-        out_ << "getattr, path " << path << std::endl;
+        out_ << "multifs: getattr, path " << path << std::endl;
         return fs_->getattr(path, stbuf, fi);
     }
 
     int readlink(char const* path, char* buf, size_t size) const override
     {
-        out_ << "readlink, path " << path << ", buf " << buf << ", size " << size << std::endl;
+        out_ << "multifs: readlink, path " << path << ", buf " << buf << ", size " << size << std::endl;
         return fs_->readlink(path, buf, size);
     }
 
     int mknod(char const* path, mode_t mode, dev_t rdev) override
     {
-        out_ << "mknod, path " << path << ", mode 0" << std::oct << mode << std::dec << std::endl;
+        out_ << "multifs: mknod, path " << path << ", mode 0" << std::oct << mode << std::dec << std::endl;
         return fs_->mknod(path, mode, rdev);
     }
 
     int mkdir(char const* path, mode_t mode) override
     {
-        out_ << "mkdir, path " << path << ", mode 0" << std::oct << mode << std::dec << std::endl;
+        out_ << "multifs: mkdir, path " << path << ", mode 0" << std::oct << mode << std::dec << std::endl;
         return fs_->mkdir(path, mode);
     }
 
     int rmdir(char const* path) override
     {
-        out_ << "rmdir, path " << path << std::endl;
+        out_ << "multifs: rmdir, path " << path << std::endl;
         return fs_->rmdir(path);
     }
 
     int symlink(char const* from, char const* to) override
     {
-        out_ << "symlink, from " << from << ", to " << to << std::endl;
+        out_ << "multifs: symlink, from " << from << ", to " << to << std::endl;
         return fs_->symlink(from, to);
     }
 
     int rename(char const* from, char const* to, unsigned int flags) override
     {
-        out_ << "rename, from " << from << ", to " << to << ", flags 0x" << std::hex << flags << std::dec << std::endl;
+        out_ << "multifs: rename, from " << from << ", to " << to << ", flags 0x" << std::hex << flags << std::dec << std::endl;
         return fs_->rename(from, to, flags);
     }
 
     int link(char const* from, char const* to) override
     {
-        out_ << "link, from " << from << ", to " << to << std::endl;
+        out_ << "multifs: link, from " << from << ", to " << to << std::endl;
         return fs_->link(from, to);
     }
 
     int access(char const* path, int mask) const override
     {
-        out_ << "access, path " << path << ", mask 0" << std::oct << mask << std::dec << std::endl;
+        out_ << "multifs: access, path " << path << ", mask 0" << std::oct << mask << std::dec << std::endl;
         return fs_->access(path, mask);
     }
 
     int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) const override
     {
-        out_ << "readdir, path " << path << ", buf " << buf << ", off " << offset << ", fi " << fi;
+        out_ << "multifs: readdir, path " << path << ", buf " << buf << ", off " << offset << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << ", flags 0x" << std::hex << static_cast<int>(flags) << std::dec << std::endl;
@@ -97,13 +97,13 @@ public:
 
     int unlink(char const* path) override
     {
-        out_ << "unlink, path " << path << std::endl;
+        out_ << "multifs: unlink, path " << path << std::endl;
         return fs_->unlink(path);
     }
 
     int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) override
     {
-        out_ << "chmod, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
+        out_ << "multifs: chmod, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -112,7 +112,7 @@ public:
 
     int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) override
     {
-        out_ << "chown, path " << path << ", uid " << uid << ", gid " << gid << ", fi " << fi;
+        out_ << "multifs: chown, path " << path << ", uid " << uid << ", gid " << gid << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -121,7 +121,7 @@ public:
 
     int truncate(char const* path, off_t size, struct fuse_file_info* fi) override
     {
-        out_ << "truncate, path " << path << ", size " << size << ", fi " << fi;
+        out_ << "multifs: truncate, path " << path << ", size " << size << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -130,7 +130,7 @@ public:
 
     int open(char const* path, struct fuse_file_info* fi) override
     {
-        out_ << "open, path " << path << ", fi " << fi;
+        out_ << "multifs: open, path " << path << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -139,7 +139,7 @@ public:
 
     int create(char const* path, mode_t mode, struct fuse_file_info* fi) override
     {
-        out_ << "create, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
+        out_ << "multifs: create, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -148,7 +148,7 @@ public:
 
     ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const override
     {
-        out_ << "read, path " << path << ", buf " << static_cast<void const*>(buf) << ", size " << size << ", off " << offset << ", fi " << fi;
+        out_ << "multifs: read, path " << path << ", buf " << static_cast<void const*>(buf) << ", size " << size << ", off " << offset << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -157,7 +157,7 @@ public:
 
     ssize_t write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) override
     {
-        out_ << "write, path " << path << ", buf " << static_cast<void const*>(buf) << ", size " << size << ", off " << offset << ", fi " << fi;
+        out_ << "multifs: write, path " << path << ", buf " << static_cast<void const*>(buf) << ", size " << size << ", off " << offset << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -166,13 +166,13 @@ public:
 
     int statfs(char const* path, struct statvfs* stbuf) const override
     {
-        out_ << "statfs, path " << path << ", stbuf " << stbuf << std::endl;
+        out_ << "multifs: statfs, path " << path << ", stbuf " << stbuf << std::endl;
         return fs_->statfs(path, stbuf);
     }
 
     int release(char const* path, struct fuse_file_info* fi) override
     {
-        out_ << "release, path " << path << ", fi " << fi;
+        out_ << "multifs: release, path " << path << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -181,7 +181,7 @@ public:
 
     int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) override
     {
-        out_ << "fsync, path " << path << ", fi " << fi;
+        out_ << "multifs: fsync, path " << path << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -191,7 +191,7 @@ public:
 #ifdef HAVE_UTIMENSAT
     int utimens(char const* path, const struct timespec tv[2], struct fuse_file_info* fi) override
     {
-        out_ << "utimens, path " << path;
+        out_ << "multifs: utimens, path " << path;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -202,7 +202,7 @@ public:
 #ifdef HAVE_POSIX_FALLOCATE
     int fallocate(char const* path, int mode, off_t offset, off_t length, struct fuse_file_info* fi) override
     {
-        out_ << "fallocate, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
+        out_ << "multifs: fallocate, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
         if (fi)
             out_ << ", fi->flags 0" << std::oct << fi->flags << std::dec;
         out_ << std::endl;
@@ -212,7 +212,7 @@ public:
 
     off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const override
     {
-        out_ << "lseek, path " << path << std::endl;
+        out_ << "multifs: lseek, path " << path << std::endl;
         return fs_->lseek(path, off, whence, fi);
     }
 };

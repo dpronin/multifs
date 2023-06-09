@@ -40,9 +40,18 @@ struct options {
 std::list<std::filesystem::path> __mpts__;
 std::filesystem::path __logp__;
 
-enum { KEY_FS, KEY_LOG };
-constexpr std::string_view kKeyFSPrefix  = "--fs=";
-constexpr std::string_view kKeyLogPrefix = "--log=";
+enum {
+    KEY_FS,
+    KEY_LOG,
+};
+
+struct multifs_option_desc {
+    int index;
+    std::string_view key;
+} multifs_option_desc[] = {
+    {.index = KEY_FS, .key = "--fs="},
+    {.index = KEY_LOG, .key = "--log="},
+};
 
 #define OPTION(t, p)                                                                                                                                           \
     {                                                                                                                                                          \
@@ -52,8 +61,8 @@ constexpr std::string_view kKeyLogPrefix = "--log=";
 const struct fuse_opt option_spec[] = {
     OPTION("-h", show_help),
     OPTION("--help", show_help),
-    FUSE_OPT_KEY(kKeyFSPrefix.data(), KEY_FS),
-    FUSE_OPT_KEY(kKeyLogPrefix.data(), KEY_LOG),
+    FUSE_OPT_KEY(multifs_option_desc[KEY_FS].key.data(), multifs_option_desc[KEY_FS].index),
+    FUSE_OPT_KEY(multifs_option_desc[KEY_LOG].key.data(), multifs_option_desc[KEY_LOG].index),
     FUSE_OPT_END,
 };
 
@@ -156,28 +165,28 @@ void show_help(std::string_view progname)
 
 int arg_processor(void* data, char const* arg, int key, struct fuse_args* outargs) noexcept
 try {
-    switch (key) {
-        case KEY_FS: {
-            auto svarg = std::string_view{arg};
-            svarg.remove_prefix(kKeyFSPrefix.size());
-            __mpts__.push_back(svarg);
-            return 0;
+    if (auto it = std::ranges::find_if(multifs_option_desc, [=](auto const& opt) { return key == opt.index; }); it != std::end(multifs_option_desc)) {
+        std::string_view svarg{arg};
+        svarg.remove_prefix(it->key.size());
+        switch (it->index) {
+            case KEY_FS:
+                __mpts__.push_back(svarg);
+                return 0;
+            case KEY_LOG:
+                __logp__ = svarg;
+                return 0;
+            default:
+                return 1;
         }
-        case KEY_LOG: {
-            auto svarg = std::string_view{arg};
-            svarg.remove_prefix(kKeyLogPrefix.size());
-            __logp__ = svarg;
-            return 0;
-        }
-        default:
-            return 1;
+    } else {
+        return 1;
     }
 } catch (std::exception const& ex) {
     std::cerr << ex.what() << '\n';
-    exit(EXIT_FAILURE);
+    return -1;
 } catch (...) {
     std::cerr << "unknown exception occurred\n";
-    exit(EXIT_FAILURE);
+    return -1;
 }
 
 inline std::unique_ptr<IFSFactory> make_fs_factory()

@@ -72,7 +72,7 @@ void MultiFileSystem::statvs_init() noexcept
     };
 }
 
-int MultiFileSystem::getattr(char const* path, struct stat* stbuf, struct fuse_file_info* /*fi*/) const noexcept
+int MultiFileSystem::getattr(char const* path, struct stat* stbuf, struct fuse_file_info* /*fi*/) const
 {
     std::memset(stbuf, 0, sizeof(struct stat));
 
@@ -117,7 +117,7 @@ int MultiFileSystem::getattr(char const* path, struct stat* stbuf, struct fuse_f
     return 0;
 }
 
-int MultiFileSystem::readlink(char const* path, char* buf, size_t size) const noexcept
+int MultiFileSystem::readlink(char const* path, char* buf, size_t size) const
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -180,7 +180,7 @@ int MultiFileSystem::link(char const* from, char const* to)
     return inodes_.emplace(to, from_it->second).second ? 0 : -EEXIST;
 }
 
-int MultiFileSystem::access(char const* path, int mask) const noexcept
+int MultiFileSystem::access(char const* path, int mask) const
 {
     if (std::strcmp(path, "/") == 0 || std::strcmp(path + 1, ".") == 0 || std::strcmp(path + 1, "..") == 0 || inodes_.count(path))
         return 0;
@@ -219,7 +219,7 @@ int MultiFileSystem::unlink(char const* path)
     return std::visit(__unlinker__, *inode);
 }
 
-int MultiFileSystem::chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept
+int MultiFileSystem::chmod(char const* path, mode_t mode, struct fuse_file_info* fi)
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -227,7 +227,7 @@ int MultiFileSystem::chmod(char const* path, mode_t mode, struct fuse_file_info*
     return std::visit(inode::INodeChmodder{mode, fi}, *it->second);
 }
 
-int MultiFileSystem::chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
+int MultiFileSystem::chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi)
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -256,7 +256,7 @@ int MultiFileSystem::create(char const* path, mode_t mode, struct fuse_file_info
     return inodes_.emplace(path, std::make_shared<INode>(File{std::string{path} + ".chunk", mode, fss_.begin(), fss_.end(), fi})).second ? 0 : -EEXIST;
 }
 
-ssize_t MultiFileSystem::read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept
+ssize_t MultiFileSystem::read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const
 {
     auto const it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -272,7 +272,7 @@ ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, o
     return std::visit(inode::INodeWriter{buf, size, offset, fi}, *it->second);
 }
 
-int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const noexcept
+int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const
 {
     *stbuf = statvfs_;
     for (auto const& fs : fss_) {
@@ -291,7 +291,7 @@ int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const noexc
     return 0;
 }
 
-int MultiFileSystem::release(char const* path, struct fuse_file_info* fi) noexcept
+int MultiFileSystem::release(char const* path, struct fuse_file_info* fi)
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -299,7 +299,7 @@ int MultiFileSystem::release(char const* path, struct fuse_file_info* fi) noexce
     return std::visit(inode::INodeReleaser{fi}, *it->second);
 }
 
-int MultiFileSystem::fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept
+int MultiFileSystem::fsync(char const* path, int isdatasync, struct fuse_file_info* fi)
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -308,7 +308,7 @@ int MultiFileSystem::fsync(char const* path, int isdatasync, struct fuse_file_in
 }
 
 #ifdef HAVE_UTIMENSAT
-int MultiFileSystem::utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* fi) noexcept
+int MultiFileSystem::utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* fi)
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
@@ -327,7 +327,7 @@ int MultiFileSystem::fallocate(char const* path, int mode, off_t offset, off_t l
 }
 #endif // HAVE_POSIX_FALLOCATE
 
-off_t MultiFileSystem::lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const noexcept
+off_t MultiFileSystem::lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const
 {
     auto it = inodes_.find(path);
     if (inodes_.end() == it)

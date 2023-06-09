@@ -32,13 +32,13 @@ public:
     LoggedFileSystem(LoggedFileSystem&&)            = delete;
     LoggedFileSystem& operator=(LoggedFileSystem&&) = delete;
 
-    int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override
+    int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const override
     {
         out_ << "getattr, path " << path << std::endl;
         return fs_->getattr(path, stbuf, fi);
     }
 
-    int readlink(char const* path, char* buf, size_t size) const noexcept override
+    int readlink(char const* path, char* buf, size_t size) const override
     {
         out_ << "readlink, path " << path << ", buf " << buf << ", size " << size << std::endl;
         return fs_->readlink(path, buf, size);
@@ -80,7 +80,7 @@ public:
         return fs_->link(from, to);
     }
 
-    int access(char const* path, int mask) const noexcept override
+    int access(char const* path, int mask) const override
     {
         out_ << "access, path " << path << ", mask 0" << std::oct << mask << std::dec << std::endl;
         return fs_->access(path, mask);
@@ -101,7 +101,7 @@ public:
         return fs_->unlink(path);
     }
 
-    int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept override
+    int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) override
     {
         out_ << "chmod, path " << path << ", mode 0" << std::oct << mode << std::dec << ", fi " << fi;
         if (fi)
@@ -110,7 +110,7 @@ public:
         return fs_->chmod(path, mode, fi);
     }
 
-    int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept override
+    int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) override
     {
         out_ << "chown, path " << path << ", uid " << uid << ", gid " << gid << ", fi " << fi;
         if (fi)
@@ -146,7 +146,7 @@ public:
         return fs_->create(path, mode, fi);
     }
 
-    ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept override
+    ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const override
     {
         out_ << "read, path " << path << ", buf " << static_cast<void const*>(buf) << ", size " << size << ", off " << offset << ", fi " << fi;
         if (fi)
@@ -164,13 +164,13 @@ public:
         return fs_->write(path, buf, size, offset, fi);
     }
 
-    int statfs(char const* path, struct statvfs* stbuf) const noexcept override
+    int statfs(char const* path, struct statvfs* stbuf) const override
     {
         out_ << "statfs, path " << path << ", stbuf " << stbuf << std::endl;
         return fs_->statfs(path, stbuf);
     }
 
-    int release(char const* path, struct fuse_file_info* fi) noexcept override
+    int release(char const* path, struct fuse_file_info* fi) override
     {
         out_ << "release, path " << path << ", fi " << fi;
         if (fi)
@@ -179,7 +179,7 @@ public:
         return fs_->release(path, fi);
     }
 
-    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept override
+    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) override
     {
         out_ << "fsync, path " << path << ", fi " << fi;
         if (fi)
@@ -189,7 +189,7 @@ public:
     }
 
 #ifdef HAVE_UTIMENSAT
-    int utimens(char const* path, const struct timespec tv[2], struct fuse_file_info* fi) noexcept override
+    int utimens(char const* path, const struct timespec tv[2], struct fuse_file_info* fi) override
     {
         out_ << "utimens, path " << path;
         if (fi)
@@ -210,7 +210,7 @@ public:
     }
 #endif // HAVE_POSIX_FALLOCATE
 
-    off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const noexcept override
+    off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const override
     {
         out_ << "lseek, path " << path << std::endl;
         return fs_->lseek(path, off, whence, fi);

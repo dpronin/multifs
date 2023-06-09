@@ -31,13 +31,13 @@ public:
     ThreadSafeAccessFileSystem(ThreadSafeAccessFileSystem&&)            = delete;
     ThreadSafeAccessFileSystem& operator=(ThreadSafeAccessFileSystem&&) = delete;
 
-    int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override
+    int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const override
     {
         std::shared_lock g{lock_};
         return fs_->getattr(path, stbuf, fi);
     }
 
-    int readlink(char const* path, char* buf, size_t size) const noexcept override
+    int readlink(char const* path, char* buf, size_t size) const override
     {
         std::shared_lock g{lock_};
         return fs_->readlink(path, buf, size);
@@ -79,7 +79,7 @@ public:
         return fs_->link(from, to);
     }
 
-    int access(char const* path, int mask) const noexcept override
+    int access(char const* path, int mask) const override
     {
         std::shared_lock g{lock_};
         return fs_->access(path, mask);
@@ -127,7 +127,7 @@ public:
         return fs_->create(path, mode, fi);
     }
 
-    ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept override
+    ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const override
     {
         std::shared_lock g{lock_};
         return fs_->read(path, buf, size, offset, fi);
@@ -139,7 +139,7 @@ public:
         return fs_->write(path, buf, size, offset, fi);
     }
 
-    int statfs(char const* path, struct statvfs* stbuf) const noexcept override
+    int statfs(char const* path, struct statvfs* stbuf) const override
     {
         std::shared_lock g{lock_};
         return fs_->statfs(path, stbuf);
@@ -173,7 +173,7 @@ public:
     }
 #endif // HAVE_POSIX_FALLOCATE
 
-    off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const noexcept override
+    off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const override
     {
         std::shared_lock g{lock_};
         return fs_->lseek(path, off, whence, fi);

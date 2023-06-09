@@ -1,5 +1,6 @@
 [requires]
 libfuse/[~3.10]
+boost/[~1.82]
 
 [generators]
 CMakeToolchain

@@ -11,6 +11,10 @@
 #include <string_view>
 #include <utility>
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/constants.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include <unistd.h>
 
 #include <fuse.h>
@@ -39,7 +43,7 @@ std::list<std::filesystem::path> __mpts__;
 std::filesystem::path __logp__;
 
 enum {
-    KEY_FS,
+    KEY_FSS,
     KEY_LOG,
 };
 
@@ -47,7 +51,7 @@ struct multifs_option_desc {
     int index;
     std::string_view key;
 } multifs_option_desc[] = {
-    {.index = KEY_FS, .key = "--fs="},
+    {.index = KEY_FSS, .key = "--fss="},
     {.index = KEY_LOG, .key = "--log="},
 };
 
@@ -59,7 +63,7 @@ struct multifs_option_desc {
 const struct fuse_opt option_spec[] = {
     OPTION("-h", show_help),
     OPTION("--help", show_help),
-    FUSE_OPT_KEY(multifs_option_desc[KEY_FS].key.data(), multifs_option_desc[KEY_FS].index),
+    FUSE_OPT_KEY(multifs_option_desc[KEY_FSS].key.data(), multifs_option_desc[KEY_FSS].index),
     FUSE_OPT_KEY(multifs_option_desc[KEY_LOG].key.data(), multifs_option_desc[KEY_LOG].index),
     FUSE_OPT_END,
 };
@@ -174,9 +178,10 @@ void show_help(std::string_view progname)
 {
     std::cout << "usage: " << progname << " [options] <mountpoint>\n\n";
     std::cout << "Multi File-system specific options:\n"
-              << "    --fs=<path>            path to a single mount point to "
-                 "combine it with others within the Multi File-system\n"
-              << "    --log=<path>           path to a file where multifs will log operations\n"
+              << "    --fss=<path1>:<path2>:<path3>:...    paths to mount points to "
+                 "combine them within the multifs\n"
+              << "    --log=<path>                         path to a file where multifs "
+                 "will log operations\n"
               << "\n";
     std::cout.flush();
 }
@@ -187,9 +192,12 @@ try {
         std::string_view svarg{arg};
         svarg.remove_prefix(it->key.size());
         switch (it->index) {
-            case KEY_FS:
-                __mpts__.push_back(std::filesystem::absolute(svarg).lexically_normal());
+            case KEY_FSS: {
+                decltype(__mpts__) mpts;
+                boost::split(mpts, svarg, boost::is_any_of(":"), boost::token_compress_on);
+                std::ranges::transform(mpts, std::back_inserter(__mpts__), [](auto const& mp) { return std::filesystem::absolute(mp).lexically_normal(); });
                 return 0;
+            }
             case KEY_LOG:
                 __logp__ = std::filesystem::absolute(svarg).lexically_normal();
                 return 0;

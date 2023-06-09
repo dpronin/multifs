@@ -1,5 +1,6 @@
 find_package(Threads REQUIRED)
 find_package(libfuse REQUIRED)
+find_package(Boost REQUIRED)
 
 add_executable(multifs
     factory_interface.hpp
@@ -44,6 +45,7 @@ add_executable(multifs
 target_link_libraries(multifs PRIVATE
     libfuse::libfuse
     Threads::Threads
+    Boost::headers
     ${CMAKE_DL_LIBS})
 
 target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=34)

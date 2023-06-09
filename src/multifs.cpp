@@ -175,9 +175,8 @@ try {
 inline std::unique_ptr<IFSFactory> make_fs_factory()
 {
     std::unique_ptr<IFSFactory> fsf;
-    std::vector<std::filesystem::path> mps;
 
-    std::ranges::transform(__mpts__, std::back_inserter(mps), [](auto const& mp) { return std::filesystem::absolute(mp).lexically_normal(); });
+    std::ranges::transform(__mpts__, __mpts__.begin(), [](auto const& mp) { return std::filesystem::absolute(mp).lexically_normal(); });
 
     if (__mpts__.empty())
         throw std::runtime_error("there are no single File-systems to combine to Multi File-system");

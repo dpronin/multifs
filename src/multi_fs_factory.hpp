@@ -2,19 +2,16 @@
 
 #include <sys/types.h>
 
-#include <filesystem>
 #include <list>
 #include <memory>
-#include <utility>
 
-#include "factory_unique_interface.hpp"
-#include "file_system_interface.hpp"
+#include "fs_factory_interface.hpp"
 #include "multi_file_system.hpp"
 
 namespace multifs
 {
 
-class MultiFSFactory final : public IFactoryUnique<rvwrap<IFileSystem>()>
+class MultiFSFactory final : public IFSFactory
 {
 private:
     uid_t owner_uid_;

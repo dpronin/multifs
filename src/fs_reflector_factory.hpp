@@ -4,14 +4,13 @@
 #include <memory>
 #include <utility>
 
-#include "factory_unique_interface.hpp"
-#include "file_system_interface.hpp"
 #include "file_system_reflector.hpp"
+#include "fs_factory_interface.hpp"
 
 namespace multifs
 {
 
-class FSReflectorFactory final : public IFactoryUnique<rvwrap<IFileSystem>()>
+class FSReflectorFactory final : public IFSFactory
 {
 private:
     std::filesystem::path mp_;

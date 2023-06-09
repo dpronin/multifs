@@ -2,21 +2,24 @@
 
 #include <ctime>
 
-#include <concepts>
 #include <type_traits>
-#include <utility>
 
 namespace multifs
 {
 
+// clang-format off
 template <typename T>
-struct dependent_true : std::true_type {
-};
+struct dependent_true : std::true_type {};
+// clang-format on
+
 template <typename T>
 inline constexpr bool dependent_true_v = dependent_true<T>::value;
+
+// clang-format off
 template <typename T>
-struct dependent_false : std::false_type {
-};
+struct dependent_false : std::false_type {};
+// clang-format on
+
 template <typename T>
 inline constexpr bool dependent_false_v = dependent_false<T>::value;
 

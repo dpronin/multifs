@@ -29,10 +29,12 @@ add_executable(multifs
     inode/inode_utimenser.hpp
     inode/inode_writer.hpp
     logged_file_system.hpp
+    main.cpp
     multi_file_system.cpp
     multi_file_system.hpp
     multi_fs_factory.hpp
     multifs.cpp
+    multifs.hpp
     passthrough_helpers.hpp
     rvwrap.hpp
     scope_exit.hpp

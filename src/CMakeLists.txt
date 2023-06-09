@@ -34,7 +34,6 @@ target_link_libraries(multifs PRIVATE
     libfuse::libfuse
     Threads::Threads
     ${CMAKE_DL_LIBS})
-# shared_lock does not work with glibc linked statically
-# target_link_options(multifs PRIVATE -static)
+
 target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=34)
 target_include_directories(multifs PRIVATE ${CMAKE_CURRENT_LIST_DIR})

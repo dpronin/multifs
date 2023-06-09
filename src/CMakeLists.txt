@@ -26,6 +26,7 @@ add_executable(multifs
     inode/inode_utimenser.hpp
     inode/inode_writer.hpp
     log.hpp
+    logged_file_system.hpp
     multi_file_system.cpp
     multi_file_system.hpp
     multi_fs_factory.hpp

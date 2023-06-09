@@ -45,11 +45,11 @@ namespace
 inode::INodeUnlinker __unlinker__;
 
 // constexpr unsigned long kFUSESuperMagic = 0x65735546;
-constexpr unsigned long kBlockSize = 4 * 1024UL;
-constexpr unsigned long kMaxName   = 255;
+constexpr decltype(statvfs::f_bsize) kBlockSize = 4 * 1024UL;
+constexpr decltype(statvfs::f_namemax) kMaxName = 255;
 // constexpr unsigned long kMaxBlocks      = 1024 * 1024UL;
 // constexpr unsigned long kMaxInode       = 1024 * 1024UL;
-constexpr unsigned long kFSID = 0x0123456789098765;
+constexpr decltype(statvfs::f_fsid) kFSID = 0x0123456789098765;
 
 } // anonymous namespace
 
@@ -127,19 +127,19 @@ int MultiFileSystem::readlink(char const* path, char* buf, size_t size) const no
 
 int MultiFileSystem::mknod(char const* path, mode_t mode, dev_t rdev)
 {
-    // TODO: implement the function
+    // TODO(Denis Pronin <dannftk@yandex.ru>): implement the function
     return -EINVAL;
 }
 
 int MultiFileSystem::mkdir(char const* path, mode_t mode)
 {
-    // TODO: implement the function
+    // TODO(Denis Pronin <dannftk@yandex.ru>): implement the function
     return -EINVAL;
 }
 
 int MultiFileSystem::rmdir(char const* path)
 {
-    // TODO: implement the function
+    // TODO(Denis Pronin <dannftk@yandex.ru>): implement the function
     return -EINVAL;
 }
 

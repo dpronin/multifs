@@ -3,13 +3,11 @@
 #include <cerrno>
 #include <cstddef>
 
+#include <fuse.h>
+
 #include "file.hpp"
 #include "symlink.hpp"
 #include "utilities.hpp"
-
-extern "C" {
-#include "fuse.h"
-} // extern "C"
 
 namespace multifs::inode
 {

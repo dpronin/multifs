@@ -16,12 +16,10 @@
 #include <stdexcept>
 #include <utility>
 
+#include <fuse.h>
+
 #include "passthrough_helpers.hpp"
 #include "utilities.hpp"
-
-extern "C" {
-#include "fuse.h"
-} // extern "C"
 
 using namespace multifs;
 

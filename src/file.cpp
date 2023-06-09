@@ -9,11 +9,10 @@
 #include <limits>
 #include <system_error>
 
+#include <fuse.h>
+
 #include "utilities.hpp"
 
-extern "C" {
-#include "fuse.h"
-} // extern "C"
 
 using namespace multifs;
 

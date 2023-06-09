@@ -6,9 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-extern "C" {
-#include "fuse.h"
-} // extern "C"
+#include <fuse.h>
 
 namespace multifs
 {

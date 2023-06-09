@@ -13,6 +13,8 @@
 
 #include <unistd.h>
 
+#include <fuse.h>
+
 #include "file_system_interface.hpp"
 #include "file_system_reflector.hpp"
 #include "fs_factory_interface.hpp"
@@ -20,10 +22,6 @@
 #include "log.hpp"
 #include "multi_file_system.hpp"
 #include "multi_fs_factory.hpp"
-
-extern "C" {
-#include "fuse.h"
-} // extern "C"
 
 using namespace multifs;
 

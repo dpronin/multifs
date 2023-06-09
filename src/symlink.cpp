@@ -4,9 +4,7 @@
 
 #include <utility>
 
-extern "C" {
-#include "fuse.h"
-} // extern "C"
+#include <fuse.h>
 
 using namespace multifs;
 

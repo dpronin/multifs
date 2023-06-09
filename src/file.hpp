@@ -12,11 +12,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "file_system_interface.hpp"
+#include <fuse.h>
 
-extern "C" {
-#include "fuse.h"
-} // extern "C"
+#include "file_system_interface.hpp"
 
 namespace multifs
 {

@@ -78,7 +78,9 @@ std::unique_ptr<IFSFactory> make_fs_factory()
     return fsf;
 }
 
-auto& multifs_get_fs() noexcept { return *static_cast<IFileSystem*>(fuse_get_context()->private_data); }
+auto& multifs_to_fs(void* private_data) noexcept { return *static_cast<FileSystemNoexcept*>(private_data); }
+
+auto& multifs_get_fs() noexcept { return multifs_to_fs(fuse_get_context()->private_data); }
 
 int multifs_getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept { return multifs_get_fs().getattr(path, stbuf, fi); }
 
@@ -148,7 +150,7 @@ void multifs_destroy(void* private_data)
     //     out << "destroy: private_data " << private_data << std::endl;
     // #endif
 
-    delete static_cast<FileSystemNoexcept*>(private_data);
+    delete &multifs_to_fs(private_data);
 }
 
 int multifs_access(char const* path, int mask) noexcept { return multifs_get_fs().access(path, mask); }

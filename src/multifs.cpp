@@ -1,6 +1,6 @@
 #include <cassert>
-
 #include <cstdlib>
+
 #include <filesystem>
 #include <iostream>
 #include <iterator>
@@ -32,7 +32,7 @@ struct options {
     int show_help;
 } opts;
 
-std::list<std::filesystem::path> mpts;
+std::list<std::filesystem::path> __mpts__;
 
 enum { KEY_FS };
 constexpr std::string_view kKeyFSPrefix = "--fs=";
@@ -304,7 +304,7 @@ try {
         case KEY_FS: {
             auto svarg = std::string_view{arg};
             svarg.remove_prefix(kKeyFSPrefix.size());
-            mpts.push_back(svarg);
+            __mpts__.push_back(svarg);
             return 0;
         }
         default:
@@ -324,7 +324,7 @@ inline std::unique_ptr<IFileSystem> make_file_system()
 
     std::list<std::unique_ptr<IFileSystem>> fsystems;
 
-    for (auto const& mpt : mpts) {
+    for (auto const& mpt : __mpts__) {
         try {
             fsystems.push_back(std::make_unique<FileSystemReflector>(std::filesystem::absolute(mpt).lexically_normal()));
         } catch (std::exception const& ex) {
@@ -337,7 +337,8 @@ inline std::unique_ptr<IFileSystem> make_file_system()
 
     if (fsystems.empty())
         throw std::runtime_error("there are no single File-systems to combine to Multi File-system");
-    else if (1 == fsystems.size())
+
+    if (1 == fsystems.size())
         fs = std::move(fsystems.front());
     else
         fs = std::make_unique<ThreadSafeAccessFileSystem>(

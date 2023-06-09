@@ -183,7 +183,7 @@ ssize_t File::write(char const* buf, size_t size, off_t offset, struct fuse_file
     if (fi && 0 != fi->fh)
         v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
 
-    for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const&chunk) { return offset < chunk.end_off; });
+    for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const& chunk) { return offset < chunk.end_off; });
          0 != size && chunks_.end() != chunk_it;
          ++chunk_it) {
 
@@ -262,7 +262,7 @@ ssize_t File::read(char* buf, size_t size, off_t offset, struct fuse_file_info* 
     if (fi && 0 != fi->fh)
         v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
 
-    for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const&chunk) { return offset < chunk.end_off; });
+    for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const& chunk) { return offset < chunk.end_off; });
          0 != size && chunks_.end() != chunk_it;
          ++chunk_it) {
 

@@ -63,10 +63,10 @@ public:
     }
     ~File() = default;
 
-    File(File const&) = default;
+    File(File const&)            = default;
     File& operator=(File const&) = default;
 
-    File(File&&) noexcept = default;
+    File(File&&) noexcept            = default;
     File& operator=(File&&) noexcept = default;
 
     [[nodiscard]] auto const& desc() const noexcept { return desc_; }

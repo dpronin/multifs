@@ -35,10 +35,10 @@ public:
     Symlink() = default;
     explicit Symlink(std::filesystem::path target) noexcept;
 
-    Symlink(Symlink const&) = default;
+    Symlink(Symlink const&)            = default;
     Symlink& operator=(Symlink const&) = default;
 
-    Symlink(Symlink&&) noexcept = default;
+    Symlink(Symlink&&) noexcept            = default;
     Symlink& operator=(Symlink&&) noexcept = default;
 
     [[nodiscard]] auto const& target() const noexcept { return target_; }

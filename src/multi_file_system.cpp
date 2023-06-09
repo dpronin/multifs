@@ -18,22 +18,22 @@
 #include <utility>
 #include <variant>
 
-#include "inode_chmodder.hpp"
-#include "inode_chowner.hpp"
-#include "inode_fsyncer.hpp"
-#include "inode_link_reader.hpp"
-#include "inode_lseeker.hpp"
-#include "inode_opener.hpp"
-#include "inode_reader.hpp"
-#include "inode_releaser.hpp"
-#include "inode_truncater.hpp"
-#include "inode_unlinker.hpp"
-#include "inode_writer.hpp"
+#include "inode/inode_chmodder.hpp"
+#include "inode/inode_chowner.hpp"
+#include "inode/inode_fsyncer.hpp"
+#include "inode/inode_link_reader.hpp"
+#include "inode/inode_lseeker.hpp"
+#include "inode/inode_opener.hpp"
+#include "inode/inode_reader.hpp"
+#include "inode/inode_releaser.hpp"
+#include "inode/inode_truncater.hpp"
+#include "inode/inode_unlinker.hpp"
+#include "inode/inode_writer.hpp"
 #ifdef HAVE_UTIMENSAT
-#include "inode_utimenser.hpp"
+#include "inode/inode_utimenser.hpp"
 #endif
 #ifdef HAVE_POSIX_FALLOCATE
-#include "inode_fallocater.hpp"
+#include "inode/inode_fallocater.hpp"
 #endif
 #include "utilities.hpp"
 

@@ -7,19 +7,19 @@ add_executable(multifs
     file_system_interface.hpp
     file_system_reflector.cpp
     file_system_reflector.hpp
-    inode_chmodder.hpp
-    inode_chowner.hpp
-    inode_fallocater.hpp
-    inode_fsyncer.hpp
-    inode_link_reader.hpp
-    inode_lseeker.hpp
-    inode_opener.hpp
-    inode_reader.hpp
-    inode_releaser.hpp
-    inode_truncater.hpp
-    inode_unlinker.hpp
-    inode_utimenser.hpp
-    inode_writer.hpp
+    inode/inode_chmodder.hpp
+    inode/inode_chowner.hpp
+    inode/inode_fallocater.hpp
+    inode/inode_fsyncer.hpp
+    inode/inode_link_reader.hpp
+    inode/inode_lseeker.hpp
+    inode/inode_opener.hpp
+    inode/inode_reader.hpp
+    inode/inode_releaser.hpp
+    inode/inode_truncater.hpp
+    inode/inode_unlinker.hpp
+    inode/inode_utimenser.hpp
+    inode/inode_writer.hpp
     log.hpp
     multi_file_system.cpp
     multi_file_system.hpp
@@ -37,3 +37,4 @@ target_link_libraries(multifs PRIVATE
 # shared_lock does not work with glibc linked statically
 # target_link_options(multifs PRIVATE -static)
 target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=34)
+target_include_directories(multifs PRIVATE ${CMAKE_CURRENT_LIST_DIR})

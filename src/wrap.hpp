@@ -11,20 +11,22 @@ namespace multifs
 
 template <typename Callable, typename... Args>
 auto wrap(Callable&& callable, Args&&... args)
-try {
+{
     using return_t = std::invoke_result_t<Callable, Args...>;
-    if constexpr (std::is_same_v<return_t, void>)
-        return callable(std::forward<Args>(args)...), 0;
-    else
-        return callable(std::forward<Args>(args)...);
-} catch (std::system_error const& ex) {
-    return -ex.code().value();
-} catch (std::invalid_argument const& ex) {
-    return -EINVAL;
-} catch (std::bad_alloc const& ex) {
-    return -ENOMEM;
-} catch (...) {
-    return -EINVAL;
+    try {
+        if constexpr (std::is_same_v<return_t, void>)
+            return callable(std::forward<Args>(args)...), static_cast<return_t>(0);
+        else
+            return static_cast<return_t>(callable(std::forward<Args>(args)...));
+    } catch (std::system_error const& ex) {
+        return static_cast<return_t>(-ex.code().value());
+    } catch (std::invalid_argument const& ex) {
+        return static_cast<return_t>(-EINVAL);
+    } catch (std::bad_alloc const& ex) {
+        return static_cast<return_t>(-ENOMEM);
+    } catch (...) {
+        return static_cast<return_t>(-EINVAL);
+    }
 }
 
 } // namespace multifs

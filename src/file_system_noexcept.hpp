@@ -31,9 +31,15 @@ public:
     FileSystemNoexcept(FileSystemNoexcept&&)            = delete;
     FileSystemNoexcept& operator=(FileSystemNoexcept&&) = delete;
 
-    int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override { return fs_->getattr(path, stbuf, fi); }
+    int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->getattr(args...); }, path, stbuf, fi);
+    }
 
-    int readlink(char const* path, char* buf, size_t size) const noexcept override { return fs_->readlink(path, buf, size); }
+    int readlink(char const* path, char* buf, size_t size) const noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->readlink(args...); }, path, buf, size);
+    }
 
     int mknod(char const* path, mode_t mode, dev_t rdev) noexcept override
     {
@@ -65,7 +71,10 @@ public:
         return wrap([this](auto... args) { return fs_->link(args...); }, from, to);
     }
 
-    int access(char const* path, int mask) const noexcept override { return fs_->access(path, mask); }
+    int access(char const* path, int mask) const noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->access(args...); }, path, mask);
+    }
 
     int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) const noexcept override
     {
@@ -77,9 +86,15 @@ public:
         return wrap([this](auto... args) { return fs_->unlink(args...); }, path);
     }
 
-    int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept override { return fs_->chmod(path, mode, fi); }
+    int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->chmod(args...); }, path, mode, fi);
+    }
 
-    int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept override { return fs_->chown(path, uid, gid, fi); }
+    int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->chown(args...); }, path, uid, gid, fi);
+    }
 
     int truncate(char const* path, off_t size, struct fuse_file_info* fi) noexcept override
     {
@@ -98,22 +113,34 @@ public:
 
     ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept override
     {
-        return fs_->read(path, buf, size, offset, fi);
+        return wrap([this](auto... args) { return fs_->read(args...); }, path, buf, size, offset, fi);
     }
 
     ssize_t write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept override
     {
-        return wrap([this](auto... args) { return static_cast<int>(fs_->write(args...)); }, path, buf, size, offset, fi);
+        return wrap([this](auto... args) { return fs_->write(args...); }, path, buf, size, offset, fi);
     }
 
-    int statfs(char const* path, struct statvfs* stbuf) const noexcept override { return fs_->statfs(path, stbuf); }
+    int statfs(char const* path, struct statvfs* stbuf) const noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->statfs(args...); }, path, stbuf);
+    }
 
-    int release(char const* path, struct fuse_file_info* fi) noexcept override { return fs_->release(path, fi); }
+    int release(char const* path, struct fuse_file_info* fi) noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->release(args...); }, path, fi);
+    }
 
-    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept override { return fs_->fsync(path, isdatasync, fi); }
+    int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->fsync(args...); }, path, isdatasync, fi);
+    }
 
 #ifdef HAVE_UTIMENSAT
-    int utimens(char const* path, const struct timespec tv[2], struct fuse_file_info* fi) noexcept override { return fs_->utimens(path, tv, fi); }
+    int utimens(char const* path, const struct timespec tv[2], struct fuse_file_info* fi) noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->utimens(args...); }, path, tv, fi);
+    }
 #endif // HAVE_UTIMENSAT
 
 #ifdef HAVE_POSIX_FALLOCATE
@@ -123,7 +150,10 @@ public:
     }
 #endif // HAVE_POSIX_FALLOCATE
 
-    off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const noexcept override { return fs_->lseek(path, off, whence, fi); }
+    off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const noexcept override
+    {
+        return wrap([this](auto... args) { return fs_->lseek(args...); }, path, off, whence, fi);
+    }
 };
 
 } // namespace multifs

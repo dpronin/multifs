@@ -20,10 +20,10 @@
 #include <unistd.h>
 
 #include "file_system_interface.hpp"
-#include "fs_factory_interface.hpp"
-#include "fs_reflector_factory.hpp"
+#include "file_system_reflector.hpp"
 #include "logged_file_system.hpp"
-#include "multi_fs_factory.hpp"
+#include "multi_file_system.hpp"
+#include "thread_safe_access_file_system.hpp"
 
 #include "multifs.hpp"
 #include "scope_exit.hpp"
@@ -120,14 +120,18 @@ auto make_absolute_normal(PathsRange const& paths)
     return new_paths;
 }
 
-std::unique_ptr<IFSFactory> make_fs_factory(app_params const& params)
+std::unique_ptr<IFileSystem> make_fs(app_params const& params)
 {
-    std::unique_ptr<IFSFactory> fsf;
-    if (auto const& mpts = params.mpts; 1 == mpts.size())
-        fsf = std::make_unique<FSReflectorFactory>(make_absolute_normal(mpts.front()));
-    else
-        fsf = std::make_unique<MultiFSFactory>(getuid(), getgid(), make_absolute_normal(mpts));
-    return fsf;
+    std::unique_ptr<IFileSystem> fs;
+    if (auto const& mpts = params.mpts; 1 == mpts.size()) {
+        fs = std::make_unique<FileSystemReflector>(make_absolute_normal(mpts.front()));
+    } else {
+        std::list<std::unique_ptr<IFileSystem>> fss;
+        std::ranges::transform(make_absolute_normal(mpts), std::back_inserter(fss), [](auto const& mp) { return std::make_unique<FileSystemReflector>(mp); });
+        fs = std::make_unique<ThreadSafeAccessFileSystem>(
+            std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fss.begin()), std::make_move_iterator(fss.end())));
+    }
+    return fs;
 }
 
 } // namespace
@@ -151,7 +155,7 @@ int main(int argc, char* argv[])
         assert(fuse_opt_add_arg(&args, "--help") == 0);
         args.argv[0][0] = '\0';
     } else if (!params.mpts.empty()) {
-        fs = make_fs_factory(params)->create_unique();
+        fs = make_fs(params);
         if (auto const& logp = params.logp; !logp.empty())
             fs = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
     } else {

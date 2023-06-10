@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 #include "file_system_interface.hpp"
@@ -14,10 +15,10 @@ namespace multifs
 class FileSystemNoexcept final : public IFileSystemNoexcept
 {
 private:
-    std::shared_ptr<IFileSystem> fs_;
+    std::unique_ptr<IFileSystem> fs_;
 
 public:
-    explicit FileSystemNoexcept(std::shared_ptr<IFileSystem> fs)
+    explicit FileSystemNoexcept(std::unique_ptr<IFileSystem> fs)
         : fs_(std::move(fs))
     {
         if (!fs_)

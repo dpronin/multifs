@@ -1,9 +1,12 @@
 #include "multifs.hpp"
 
-#include <cstdlib>
+#include <cassert>
 
+#include <algorithm>
 #include <array>
+#include <iostream>
 #include <memory>
+#include <ranges>
 #include <utility>
 
 #include <unistd.h>
@@ -14,6 +17,10 @@
 
 #include "file_system_interface.hpp"
 #include "file_system_noexcept.hpp"
+#include "file_system_reflector.hpp"
+#include "logged_file_system.hpp"
+#include "multi_file_system.hpp"
+#include "thread_safe_access_file_system.hpp"
 
 namespace multifs
 {
@@ -23,62 +30,109 @@ namespace
 
 std::array<std::byte, sizeof(FileSystemNoexcept)> __fsmem_layout__ alignas(BOOST_LOCKFREE_CACHELINE_BYTES);
 
-auto* make_fs(std::unique_ptr<IFileSystem> fs) noexcept { return new (__fsmem_layout__.data()) FileSystemNoexcept(std::move(fs)); }
+void show_help(std::string_view progname)
+{
+    std::cout << "usage: " << progname << " [options] <mountpoint>\n\n";
+    std::cout << "Multi File-system specific options:\n"
+              << "    --fss=<path1>:<path2>:<path3>:...    paths to mount points to "
+                 "combine them within the multifs\n"
+              << "    --log=<path>                         path to a file where multifs "
+                 "will log operations\n"
+              << "\n";
+    std::cout.flush();
+}
 
-void destroy_fs(FileSystemNoexcept* fs) noexcept { fs->~FileSystemNoexcept(); }
+auto make_absolute_normal(std::filesystem::path const& path) { return std::filesystem::absolute(path).lexically_normal(); }
 
-auto& to_fs(void* private_data) noexcept { return *static_cast<FileSystemNoexcept*>(private_data); }
+template <typename PathsRange>
+auto make_absolute_normal(PathsRange const& paths)
+{
+    std::vector<std::filesystem::path> new_paths;
+    new_paths.reserve(paths.size());
+    std::ranges::transform(paths, std::back_inserter(new_paths), [](auto const& path) { return make_absolute_normal(path); });
+    return new_paths;
+}
 
-auto& fuse_private_data_ref() noexcept { return fuse_get_context()->private_data; }
+std::unique_ptr<IFileSystem> make_bfs(app_params const& params)
+{
+    std::unique_ptr<IFileSystem> fs;
+    if (auto const& mpts = params.mpts; 1 == mpts.size()) {
+        fs = std::make_unique<FileSystemReflector>(make_absolute_normal(mpts.front()));
+    } else {
+        std::list<std::unique_ptr<IFileSystem>> fss;
+        std::ranges::transform(make_absolute_normal(mpts), std::back_inserter(fss), [](auto const& mp) { return std::make_unique<FileSystemReflector>(mp); });
+        fs = std::make_unique<ThreadSafeAccessFileSystem>(
+            std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fss.begin()), std::make_move_iterator(fss.end())));
+    }
+    return fs;
+}
+
+void destroy_fs_noexcept(FileSystemNoexcept* fs) noexcept
+{
+    static_assert(std::is_nothrow_destructible_v<FileSystemNoexcept>, "FileSystemNoexcept must be nothrow-destructible");
+    fs->~FileSystemNoexcept();
+}
+
+auto make_fs_noexcept(std::unique_ptr<IFileSystem> fs)
+{
+    return std::unique_ptr<FileSystemNoexcept, decltype(&destroy_fs_noexcept)>(
+        new (__fsmem_layout__.data()) FileSystemNoexcept(std::move(fs)),
+        destroy_fs_noexcept);
+}
+
 auto* fuse_private_data_ptr() noexcept { return fuse_get_context()->private_data; }
 
-auto& get_fs() noexcept { return to_fs(fuse_private_data_ptr()); }
+auto* to_fs_noexcept_ptr(void* private_data) noexcept { return static_cast<FileSystemNoexcept*>(private_data); }
 
-int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept { return get_fs().getattr(path, stbuf, fi); }
+auto* fs_noexcept_ptr() noexcept { return to_fs_noexcept_ptr(fuse_private_data_ptr()); }
 
-int readlink(char const* path, char* buf, size_t size) noexcept { return get_fs().readlink(path, buf, size); }
+auto& fs_noexcept_ref() noexcept { return *fs_noexcept_ptr(); }
 
-int mknod(char const* path, mode_t mode, dev_t rdev) noexcept { return get_fs().mknod(path, mode, rdev); }
+int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().getattr(path, stbuf, fi); }
 
-int mkdir(char const* path, mode_t mode) noexcept { return get_fs().mkdir(path, mode); }
+int readlink(char const* path, char* buf, size_t size) noexcept { return fs_noexcept_ref().readlink(path, buf, size); }
 
-int unlink(char const* path) noexcept { return get_fs().unlink(path); }
+int mknod(char const* path, mode_t mode, dev_t rdev) noexcept { return fs_noexcept_ref().mknod(path, mode, rdev); }
 
-int rmdir(char const* path) noexcept { return get_fs().rmdir(path); }
+int mkdir(char const* path, mode_t mode) noexcept { return fs_noexcept_ref().mkdir(path, mode); }
 
-int symlink(char const* from, char const* to) noexcept { return get_fs().symlink(from, to); }
+int unlink(char const* path) noexcept { return fs_noexcept_ref().unlink(path); }
 
-int rename(char const* from, char const* to, unsigned int flags) noexcept { return get_fs().rename(from, to, flags); }
+int rmdir(char const* path) noexcept { return fs_noexcept_ref().rmdir(path); }
 
-int link(char const* from, char const* to) noexcept { return get_fs().link(from, to); }
+int symlink(char const* from, char const* to) noexcept { return fs_noexcept_ref().symlink(from, to); }
 
-int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept { return get_fs().chmod(path, mode, fi); }
+int rename(char const* from, char const* to, unsigned int flags) noexcept { return fs_noexcept_ref().rename(from, to, flags); }
 
-int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept { return get_fs().chown(path, uid, gid, fi); }
+int link(char const* from, char const* to) noexcept { return fs_noexcept_ref().link(from, to); }
 
-int truncate(char const* path, off_t size, struct fuse_file_info* fi) noexcept { return get_fs().truncate(path, size, fi); }
+int chmod(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().chmod(path, mode, fi); }
 
-int open(char const* path, struct fuse_file_info* fi) noexcept { return get_fs().open(path, fi); }
+int chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().chown(path, uid, gid, fi); }
+
+int truncate(char const* path, off_t size, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().truncate(path, size, fi); }
+
+int open(char const* path, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().open(path, fi); }
 
 int read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
 {
-    return static_cast<int>(get_fs().read(path, buf, size, offset, fi));
+    return static_cast<int>(fs_noexcept_ref().read(path, buf, size, offset, fi));
 }
 
 int write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
 {
-    return static_cast<int>(get_fs().write(path, buf, size, offset, fi));
+    return static_cast<int>(fs_noexcept_ref().write(path, buf, size, offset, fi));
 }
 
-int statfs(char const* path, struct statvfs* stbuf) noexcept { return get_fs().statfs(path, stbuf); }
+int statfs(char const* path, struct statvfs* stbuf) noexcept { return fs_noexcept_ref().statfs(path, stbuf); }
 
-int release(char const* path, struct fuse_file_info* fi) noexcept { return get_fs().release(path, fi); }
+int release(char const* path, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().release(path, fi); }
 
-int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept { return get_fs().fsync(path, isdatasync, fi); }
+int fsync(char const* path, int isdatasync, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().fsync(path, isdatasync, fi); }
 
 int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) noexcept
 {
-    return get_fs().readdir(path, buf, filler, offset, fi, flags);
+    return fs_noexcept_ref().readdir(path, buf, filler, offset, fi, flags);
 }
 
 void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept
@@ -89,7 +143,7 @@ void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept
 
     cfg->kernel_cache = 1;
 
-    return make_fs(std::unique_ptr<IFileSystem>{static_cast<IFileSystem*>(std::exchange(fuse_private_data_ref(), nullptr))});
+    return fs_noexcept_ptr();
 }
 
 void destroy(void* private_data) noexcept
@@ -98,12 +152,12 @@ void destroy(void* private_data) noexcept
     //     out << "destroy: private_data " << private_data << std::endl;
     // #endif
 
-    destroy_fs(&to_fs(private_data));
+    destroy_fs_noexcept(to_fs_noexcept_ptr(private_data));
 }
 
-int access(char const* path, int mask) noexcept { return get_fs().access(path, mask); }
+int access(char const* path, int mask) noexcept { return fs_noexcept_ref().access(path, mask); }
 
-int create(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept { return get_fs().create(path, mode, fi); }
+int create(char const* path, mode_t mode, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().create(path, mode, fi); }
 
 #ifdef HAVE_UTIMENSAT
 int utimens(char const* path, const struct timespec tv[2], struct fuse_file_info* fi) noexcept { return get_fs().utimens(path, tv, fi); }
@@ -116,9 +170,7 @@ int fallocate(char const* path, int mode, off_t offset, off_t length, struct fus
 }
 #endif // HAVE_POSIX_FALLOCATE
 
-off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) noexcept { return get_fs().lseek(path, off, whence, fi); }
-
-} // namespace
+off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().lseek(path, off, whence, fi); }
 
 fuse_operations const& getops() noexcept
 {
@@ -164,6 +216,28 @@ fuse_operations const& getops() noexcept
         .lseek = lseek,
     };
     return ops;
+}
+
+} // namespace
+
+int main(fuse_args args, app_params const& params)
+{
+    std::unique_ptr<FileSystemNoexcept, decltype(&destroy_fs_noexcept)> fs{nullptr, destroy_fs_noexcept};
+
+    if (params.show_help || params.mpts.empty()) {
+        if (params.mpts.empty())
+            std::cerr << "there are no a single FS to combine within multifs\n";
+        show_help(args.argv[0]);
+        assert(fuse_opt_add_arg(&args, "--help") == 0);
+        args.argv[0][0] = '\0';
+    } else {
+        auto bfs = make_bfs(params);
+        if (auto const& logp = params.logp; !logp.empty())
+            bfs = std::make_unique<LoggedFileSystem>(std::move(bfs), logp);
+        fs = make_fs_noexcept(std::move(bfs));
+    }
+
+    return fuse_main(args.argc, args.argv, &getops(), fs.release());
 }
 
 } // namespace multifs

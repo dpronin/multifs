@@ -3,6 +3,7 @@ find_package(libfuse REQUIRED)
 find_package(Boost REQUIRED)
 
 add_executable(multifs
+    app_params.hpp
     file.cpp
     file.hpp
     file_system_interface.hpp

@@ -28,8 +28,8 @@ namespace
 std::unique_ptr<IFSFactory> make_fs_factory()
 {
     std::unique_ptr<IFSFactory> fsf;
-    if (auto& mpts = multifs::instance().mpts(); 1 == mpts.size())
-        fsf = std::make_unique<FSReflectorFactory>(std::move(mpts.front()));
+    if (auto const& mpts = multifs::instance().mpts(); 1 == mpts.size())
+        fsf = std::make_unique<FSReflectorFactory>(mpts.front());
     else
         fsf = std::make_unique<MultiFSFactory>(getuid(), getgid(), mpts.begin(), mpts.end());
     return fsf;
@@ -97,7 +97,7 @@ void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept
     cfg->kernel_cache = 1;
 
     auto fs = make_fs_factory()->create_unique();
-    if (auto& logp = multifs::instance().logp(); !logp.empty())
+    if (auto const& logp = multifs::instance().logp(); !logp.empty())
         fs = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
 
     return make_fs(std::move(fs));

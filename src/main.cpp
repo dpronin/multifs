@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <iterator>
+#include <list>
 #include <memory>
 #include <ranges>
 #include <string_view>
@@ -73,14 +74,14 @@ try {
         svarg.remove_prefix(it->key.size());
         switch (it->index) {
             case KEY_FSS: {
-                auto& mpts = multifs::multifs::instance().mpts();
-                std::remove_reference_t<decltype(mpts)> tmp_mpts;
-                boost::split(tmp_mpts, svarg, boost::is_any_of(":"), boost::token_compress_on);
-                std::ranges::transform(tmp_mpts, std::back_inserter(mpts), [](auto const& mp) { return std::filesystem::absolute(mp).lexically_normal(); });
+                std::list<std::filesystem::path> mpts;
+                boost::split(mpts, svarg, boost::is_any_of(":"), boost::token_compress_on);
+                for (auto& mp : mpts)
+                    multifs::multifs::instance().append_mpt(std::move(mp));
                 return 0;
             }
             case KEY_LOG:
-                multifs::multifs::instance().logp() = std::filesystem::absolute(svarg).lexically_normal();
+                multifs::multifs::instance().set_logp(svarg);
                 return 0;
             default:
                 return 1;

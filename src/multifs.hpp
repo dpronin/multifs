@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <list>
+#include <utility>
 
 #include <fuse.h>
 
@@ -25,10 +26,10 @@ public:
         return obj;
     }
 
-    auto& mpts() noexcept { return detail::__mpts__; }
+    void append_mpt(std::filesystem::path path) { detail::__mpts__.push_back(std::filesystem::absolute(path).lexically_normal()); }
     auto const& mpts() const noexcept { return detail::__mpts__; }
 
-    auto& logp() noexcept { return detail::__logp__; }
+    void set_logp(std::filesystem::path path) { detail::__logp__ = std::filesystem::absolute(path).lexically_normal(); }
     auto const& logp() const noexcept { return detail::__logp__; }
 
 private:

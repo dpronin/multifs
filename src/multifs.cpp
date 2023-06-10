@@ -11,13 +11,6 @@
 
 #include "file_system_interface.hpp"
 #include "file_system_noexcept.hpp"
-#include "file_system_noexcept_interface.hpp"
-#include "file_system_reflector.hpp"
-#include "fs_factory_interface.hpp"
-#include "fs_reflector_factory.hpp"
-#include "logged_file_system.hpp"
-#include "multi_file_system.hpp"
-#include "multi_fs_factory.hpp"
 
 namespace multifs
 {
@@ -25,21 +18,14 @@ namespace multifs
 namespace
 {
 
-std::unique_ptr<IFSFactory> make_fs_factory()
-{
-    std::unique_ptr<IFSFactory> fsf;
-    if (auto const& mpts = multifs::instance().mpts(); 1 == mpts.size())
-        fsf = std::make_unique<FSReflectorFactory>(mpts.front());
-    else
-        fsf = std::make_unique<MultiFSFactory>(getuid(), getgid(), mpts.begin(), mpts.end());
-    return fsf;
-}
-
 auto* make_fs(std::unique_ptr<IFileSystem> fs) noexcept { return new FileSystemNoexcept(std::move(fs)); }
 
 auto& to_fs(void* private_data) noexcept { return *static_cast<FileSystemNoexcept*>(private_data); }
 
-auto& get_fs() noexcept { return to_fs(fuse_get_context()->private_data); }
+auto& fuse_private_data_ref() noexcept { return fuse_get_context()->private_data; }
+auto* fuse_private_data_ptr() noexcept { return fuse_get_context()->private_data; }
+
+auto& get_fs() noexcept { return to_fs(fuse_private_data_ptr()); }
 
 int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept { return get_fs().getattr(path, stbuf, fi); }
 
@@ -96,11 +82,7 @@ void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept
 
     cfg->kernel_cache = 1;
 
-    auto fs = make_fs_factory()->create_unique();
-    if (auto const& logp = multifs::instance().logp(); !logp.empty())
-        fs = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
-
-    return make_fs(std::move(fs));
+    return make_fs(std::unique_ptr<IFileSystem>{static_cast<IFileSystem*>(std::exchange(fuse_private_data_ref(), nullptr))});
 }
 
 void destroy(void* private_data)

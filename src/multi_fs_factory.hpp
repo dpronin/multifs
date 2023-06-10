@@ -6,7 +6,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
-#include <ranges>
+#include <utility>
 
 #include "file_system_interface.hpp"
 #include "file_system_reflector.hpp"
@@ -30,6 +30,14 @@ public:
         : owner_uid_(owner_uid)
         , owner_gid_(owner_gid)
         , fsmps_(begin, end)
+    {
+    }
+
+    template <typename Range>
+    explicit MultiFSFactory(uid_t owner_uid, gid_t owner_gid, Range&& range)
+        : owner_uid_(owner_uid)
+        , owner_gid_(owner_gid)
+        , fsmps_(std::begin(std::forward<Range>(range)), std::end(std::forward<Range>(range)))
     {
     }
 

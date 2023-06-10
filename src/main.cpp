@@ -17,43 +17,45 @@
 
 #include <fuse.h>
 
+#include <unistd.h>
+
+#include "file_system_interface.hpp"
+#include "fs_factory_interface.hpp"
+#include "fs_reflector_factory.hpp"
+#include "logged_file_system.hpp"
+#include "multi_fs_factory.hpp"
+
 #include "multifs.hpp"
 #include "scope_exit.hpp"
+
+using namespace multifs;
 
 namespace
 {
 
-struct options {
+struct app_params {
     int show_help;
-} opts;
+    std::list<std::filesystem::path> mpts; ///< Mount points
+    std::filesystem::path logp;            ///< Log path
+};
 
 enum {
-    KEY_FSS,
+    /* Valueless keys */
+    KEY_HELP,
+    KEY_VALUELESS_QTY,
+    /* Valueful keys */
+    KEY_FSS = KEY_VALUELESS_QTY,
     KEY_LOG,
+    KEY_VALUEFUL_QTY,
 };
 
-struct multifs_option_desc {
-    int index;
-    std::string_view key;
-} multifs_option_desc[] = {
-    {.index = KEY_FSS, .key = "--fss="},
-    {.index = KEY_LOG, .key = "--log="},
-};
-
-#define OPTION(t, p)                                                                                                                                           \
-    {                                                                                                                                                          \
-        t, offsetof(struct options, p), 1                                                                                                                      \
-    }
-
-const struct fuse_opt option_spec[] = {
-    OPTION("-h", show_help),
-    OPTION("--help", show_help),
-    FUSE_OPT_KEY(multifs_option_desc[KEY_FSS].key.data(), multifs_option_desc[KEY_FSS].index),
-    FUSE_OPT_KEY(multifs_option_desc[KEY_LOG].key.data(), multifs_option_desc[KEY_LOG].index),
+const struct fuse_opt multifs_option_desc[] = {
+    FUSE_OPT_KEY("--help", KEY_HELP),
+    FUSE_OPT_KEY("-h", KEY_HELP),
+    FUSE_OPT_KEY("--fss=", KEY_FSS),
+    FUSE_OPT_KEY("--log=", KEY_LOG),
     FUSE_OPT_END,
 };
-
-#undef OPTION
 
 void show_help(std::string_view progname)
 {
@@ -69,26 +71,36 @@ void show_help(std::string_view progname)
 
 int arg_processor(void* data, char const* arg, int key, struct fuse_args* outargs) noexcept
 try {
-    if (auto it = std::ranges::find_if(multifs_option_desc, [=](auto const& opt) { return key == opt.index; }); it != std::end(multifs_option_desc)) {
-        std::string_view svarg{arg};
-        svarg.remove_prefix(it->key.size());
-        switch (it->index) {
-            case KEY_FSS: {
-                std::list<std::filesystem::path> mpts;
-                boost::split(mpts, svarg, boost::is_any_of(":"), boost::token_compress_on);
-                for (auto& mp : mpts)
-                    multifs::multifs::instance().append_mpt(std::move(mp));
-                return 0;
+    if (auto it = std::ranges::find_if(multifs_option_desc, [=](auto const& opt) { return key == opt.value; }); it != std::end(multifs_option_desc)) {
+        auto& params = *static_cast<app_params*>(data);
+        /* Process valueless keys */
+        if (it->value < KEY_VALUELESS_QTY) {
+            switch (it->value) {
+                case KEY_HELP:
+                    params.show_help = 1;
+                    break;
+                default:
+                    break;
             }
-            case KEY_LOG:
-                multifs::multifs::instance().set_logp(svarg);
-                return 0;
-            default:
-                return 1;
+        } else {
+            std::string_view svarg{arg};
+            svarg.remove_prefix(std::string_view{it->templ}.length());
+            switch (it->value) {
+                case KEY_FSS: {
+                    std::list<std::filesystem::path> mpts;
+                    boost::split(mpts, svarg, boost::is_any_of(":"), boost::token_compress_on);
+                    std::ranges::move(mpts, std::back_inserter(params.mpts));
+                    return 0;
+                }
+                case KEY_LOG:
+                    params.logp = svarg;
+                    return 0;
+                default:
+                    break;
+            }
         }
-    } else {
-        return 1;
     }
+    return 1;
 } catch (std::exception const& ex) {
     std::cerr << ex.what() << '\n';
     return -1;
@@ -97,26 +109,55 @@ try {
     return -1;
 }
 
+auto make_absolute_normal(std::filesystem::path const& path) { return std::filesystem::absolute(path).lexically_normal(); }
+
+template <typename PathsRange>
+auto make_absolute_normal(PathsRange const& paths)
+{
+    std::vector<std::filesystem::path> new_paths;
+    new_paths.reserve(paths.size());
+    std::ranges::transform(paths, std::back_inserter(new_paths), [](auto const& path) { return make_absolute_normal(path); });
+    return new_paths;
+}
+
+std::unique_ptr<IFSFactory> make_fs_factory(app_params const& params)
+{
+    std::unique_ptr<IFSFactory> fsf;
+    if (auto const& mpts = params.mpts; 1 == mpts.size())
+        fsf = std::make_unique<FSReflectorFactory>(make_absolute_normal(mpts.front()));
+    else
+        fsf = std::make_unique<MultiFSFactory>(getuid(), getgid(), make_absolute_normal(mpts));
+    return fsf;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
     fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
+    app_params params;
+
     /* Parse options */
-    if (fuse_opt_parse(&args, &opts, option_spec, arg_processor) == -1)
+    if (fuse_opt_parse(&args, &params, multifs_option_desc, arg_processor) == -1)
         return EINVAL;
 
     multifs::scope_exit const free_args_sce{[&args] { fuse_opt_free_args(&args); }};
 
-    if (opts.show_help) {
+    std::unique_ptr<IFileSystem> fs;
+
+    if (params.show_help) {
         show_help(argv[0]);
         assert(fuse_opt_add_arg(&args, "--help") == 0);
         args.argv[0][0] = '\0';
-    } else if (multifs::multifs::instance().mpts().empty()) {
-        std::cerr << "there are no a single FS to combine to multifs\n";
+    } else if (!params.mpts.empty()) {
+        fs = make_fs_factory(params)->create_unique();
+        if (auto const& logp = params.logp; !logp.empty())
+            fs = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
+    } else {
+        std::cerr << "there are no a single FS to combine within multifs\n";
         return EINVAL;
     }
 
-    return fuse_main(args.argc, args.argv, &multifs::getops(), NULL);
+    return fuse_main(args.argc, args.argv, &multifs::getops(), fs.release());
 }

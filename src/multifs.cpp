@@ -85,7 +85,7 @@ void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept
     return make_fs(std::unique_ptr<IFileSystem>{static_cast<IFileSystem*>(std::exchange(fuse_private_data_ref(), nullptr))});
 }
 
-void destroy(void* private_data)
+void destroy(void* private_data) noexcept
 {
     // #ifndef NDEBUG
     //     out << "destroy: private_data " << private_data << std::endl;

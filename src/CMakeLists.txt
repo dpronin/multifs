@@ -3,9 +3,6 @@ find_package(libfuse REQUIRED)
 find_package(Boost REQUIRED)
 
 add_executable(multifs
-    factory_interface.hpp
-    factory_shared_interface.hpp
-    factory_unique_interface.hpp
     file.cpp
     file.hpp
     file_system_interface.hpp
@@ -13,8 +10,6 @@ add_executable(multifs
     file_system_noexcept_interface.hpp
     file_system_reflector.cpp
     file_system_reflector.hpp
-    fs_factory_interface.hpp
-    fs_reflector_factory.hpp
     inode/inode_chmodder.hpp
     inode/inode_chowner.hpp
     inode/inode_fallocater.hpp
@@ -32,11 +27,9 @@ add_executable(multifs
     main.cpp
     multi_file_system.cpp
     multi_file_system.hpp
-    multi_fs_factory.hpp
     multifs.cpp
     multifs.hpp
     passthrough_helpers.hpp
-    rvwrap.hpp
     scope_exit.hpp
     symlink.cpp
     symlink.hpp

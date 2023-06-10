@@ -2,12 +2,15 @@
 
 #include <cstdlib>
 
+#include <array>
 #include <memory>
 #include <utility>
 
 #include <unistd.h>
 
 #include <fuse.h>
+
+#include "boost/lockfree/detail/prefix.hpp"
 
 #include "file_system_interface.hpp"
 #include "file_system_noexcept.hpp"
@@ -18,7 +21,11 @@ namespace multifs
 namespace
 {
 
-auto* make_fs(std::unique_ptr<IFileSystem> fs) noexcept { return new FileSystemNoexcept(std::move(fs)); }
+std::array<std::byte, sizeof(FileSystemNoexcept)> __fsmem_layout__ alignas(BOOST_LOCKFREE_CACHELINE_BYTES);
+
+auto* make_fs(std::unique_ptr<IFileSystem> fs) noexcept { return new (__fsmem_layout__.data()) FileSystemNoexcept(std::move(fs)); }
+
+void destroy_fs(FileSystemNoexcept* fs) noexcept { fs->~FileSystemNoexcept(); }
 
 auto& to_fs(void* private_data) noexcept { return *static_cast<FileSystemNoexcept*>(private_data); }
 
@@ -91,7 +98,7 @@ void destroy(void* private_data) noexcept
     //     out << "destroy: private_data " << private_data << std::endl;
     // #endif
 
-    delete &to_fs(private_data);
+    destroy_fs(&to_fs(private_data));
 }
 
 int access(char const* path, int mask) noexcept { return get_fs().access(path, mask); }

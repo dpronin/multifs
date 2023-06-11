@@ -2,6 +2,8 @@
 
 #include <cerrno>
 
+#include <sys/stat.h>
+
 #include <fuse.h>
 
 #include "file.hpp"
@@ -11,28 +13,30 @@
 namespace multifs::inode
 {
 
-class INodeOpener
+class Truncater
 {
 private:
+    off_t new_size_;
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeOpener(struct fuse_file_info* fi) noexcept
-        : fi_(fi)
+    explicit Truncater(off_t new_size, struct fuse_file_info* fi) noexcept
+        : new_size_(new_size)
+        , fi_(fi)
     {
     }
 
-    int operator()(File& file) const { return file.open(fi_); }
+    int operator()(File& file) const { return file.truncate(new_size_, fi_); }
     int operator()(Symlink&) const noexcept
     {
-        // symlinks cannot be opened
+        // symbolic links cannot be truncated
         return -EINVAL;
     }
 
     template <typename T>
     int operator()(T&&) const noexcept
     {
-        static_assert(dependent_false_v<T>, "unhandled type T to handle 'open'");
+        static_assert(dependent_false_v<T>, "unhandled type T to handle 'truncate'");
         return 0;
     }
 };

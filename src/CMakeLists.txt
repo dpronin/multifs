@@ -11,19 +11,19 @@ add_executable(multifs
     file_system_noexcept_interface.hpp
     file_system_reflector.cpp
     file_system_reflector.hpp
-    inode/inode_chmodder.hpp
-    inode/inode_chowner.hpp
-    inode/inode_fallocater.hpp
-    inode/inode_fsyncer.hpp
-    inode/inode_link_reader.hpp
-    inode/inode_lseeker.hpp
-    inode/inode_opener.hpp
-    inode/inode_reader.hpp
-    inode/inode_releaser.hpp
-    inode/inode_truncater.hpp
-    inode/inode_unlinker.hpp
-    inode/inode_utimenser.hpp
-    inode/inode_writer.hpp
+    inode/chmodder.hpp
+    inode/chowner.hpp
+    inode/fallocater.hpp
+    inode/fsyncer.hpp
+    inode/link_reader.hpp
+    inode/lseeker.hpp
+    inode/opener.hpp
+    inode/reader.hpp
+    inode/releaser.hpp
+    inode/truncater.hpp
+    inode/unlinker.hpp
+    inode/utimenser.hpp
+    inode/writer.hpp
     logged_file_system.hpp
     main.cpp
     multi_file_system.cpp

@@ -14,7 +14,7 @@
 namespace multifs::inode
 {
 
-class INodeWriter
+class Writer
 {
 private:
     char const* buf_;
@@ -23,7 +23,7 @@ private:
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeWriter(char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
+    explicit Writer(char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
         : buf_(buf)
         , size_(size)
         , offset_(offset)

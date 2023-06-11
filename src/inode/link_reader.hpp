@@ -12,14 +12,14 @@
 namespace multifs::inode
 {
 
-class INodeLinkReader
+class LinkReader
 {
 private:
     char* buf_;
     size_t size_;
 
 public:
-    explicit INodeLinkReader(char* buf, size_t size) noexcept
+    explicit LinkReader(char* buf, size_t size) noexcept
         : buf_(buf)
         , size_(size)
     {

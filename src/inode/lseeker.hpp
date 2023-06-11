@@ -14,7 +14,7 @@
 namespace multifs::inode
 {
 
-class INodeLseeker
+class Lseeker
 {
 private:
     off_t off_;
@@ -22,7 +22,7 @@ private:
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeLseeker(off_t off, int whence, struct fuse_file_info* fi) noexcept
+    explicit Lseeker(off_t off, int whence, struct fuse_file_info* fi) noexcept
         : off_(off)
         , whence_(whence)
         , fi_(fi)

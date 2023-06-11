@@ -11,28 +11,30 @@
 namespace multifs::inode
 {
 
-class INodeReleaser
+class Fsyncer
 {
 private:
+    int isdatasync_;
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeReleaser(struct fuse_file_info* fi) noexcept
-        : fi_(fi)
+    explicit Fsyncer(int isdatasync, struct fuse_file_info* fi) noexcept
+        : isdatasync_(isdatasync)
+        , fi_(fi)
     {
     }
 
-    int operator()(File& file) const { return file.release(fi_); }
+    int operator()(File& file) const noexcept { return file.fsync(isdatasync_, fi_); }
     int operator()(Symlink&) const noexcept
     {
-        // symlinks cannot be released
+        // symlinks cannot be fsync-ed
         return -EINVAL;
     }
 
     template <typename T>
     int operator()(T&&) const noexcept
     {
-        static_assert(dependent_false_v<T>, "unhandled type T to handle 'release'");
+        static_assert(dependent_false_v<T>, "unhandled type T to handle 'fsync'");
         return 0;
     }
 };

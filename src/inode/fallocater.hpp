@@ -14,7 +14,7 @@
 namespace multifs::inode
 {
 
-class INodeFallocater
+class Fallocater
 {
 private:
     int mode_;
@@ -23,7 +23,7 @@ private:
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeFallocater(int mode, off_t offset, off_t length, struct fuse_file_info* fi) noexcept
+    explicit Fallocater(int mode, off_t offset, off_t length, struct fuse_file_info* fi) noexcept
         : mode_(mode)
         , offset_(offset)
         , length_(length)

@@ -7,7 +7,7 @@
 namespace multifs::inode
 {
 
-class INodeUnlinker
+class Unlinker
 {
 public:
     int operator()(File& file) const { return file.unlink(); }

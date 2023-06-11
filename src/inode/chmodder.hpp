@@ -11,14 +11,14 @@
 namespace multifs::inode
 {
 
-class INodeChmodder
+class Chmodder
 {
 private:
     mode_t mode_;
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeChmodder(mode_t mode, struct fuse_file_info* fi) noexcept
+    explicit Chmodder(mode_t mode, struct fuse_file_info* fi) noexcept
         : mode_(mode)
         , fi_(fi)
     {

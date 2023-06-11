@@ -11,7 +11,7 @@
 namespace multifs::inode
 {
 
-class INodeChowner
+class Chowner
 {
 private:
     uid_t uid_;
@@ -19,7 +19,7 @@ private:
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeChowner(uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
+    explicit Chowner(uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept
         : uid_(uid)
         , gid_(gid)
         , fi_(fi)

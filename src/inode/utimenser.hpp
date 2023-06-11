@@ -11,14 +11,14 @@
 namespace multifs::inode
 {
 
-class INodeUtimenser
+class Utimenser
 {
 private:
     struct timespec const* ts_;
     struct fuse_file_info* fi_;
 
 public:
-    explicit INodeUtimenser(struct timespec const ts[2], struct fuse_file_info* fi) noexcept
+    explicit Utimenser(struct timespec const ts[2], struct fuse_file_info* fi) noexcept
         : ts_(ts)
         , fi_(fi)
     {

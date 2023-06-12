@@ -8,6 +8,7 @@
 #include <list>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 
 #include "file.hpp"
@@ -39,6 +40,13 @@ public:
     {
         statvs_init();
     }
+
+    template <typename Range>
+    explicit MultiFileSystem(uid_t owner_uid, gid_t owner_gid, Range&& range)
+        : MultiFileSystem(owner_uid, owner_gid, std::begin(std::forward<Range>(range)), std::end(std::forward<Range>(range)))
+    {
+    }
+
     ~MultiFileSystem() override = default;
 
     MultiFileSystem(MultiFileSystem const&)            = delete;

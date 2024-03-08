@@ -195,9 +195,19 @@ int FileSystemReflector::release(char const*, struct fuse_file_info* fi)
     return 0;
 }
 
-int FileSystemReflector::fsync(char const* /*path*/, int /*isdatasync*/, struct fuse_file_info* /*fi*/)
+int FileSystemReflector::fsync(char const* path, int /*isdatasync*/, struct fuse_file_info* fi)
 {
-    // INFO: the function may not be implemented
+    auto const fd = fi ? fi->fh : ::open(to_path(path).c_str(), O_RDWR);
+    if (fd == -1)
+        return -errno;
+
+    auto res = ::fsync(fd);
+    if (res == -1)
+        res = -errno;
+
+    if (!fi)
+        ::close(fd);
+
     return 0;
 }
 

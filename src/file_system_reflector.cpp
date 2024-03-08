@@ -2,6 +2,7 @@
 
 #include <cerrno>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 
@@ -156,9 +157,18 @@ ssize_t FileSystemReflector::read(char const* path, char* buf, size_t size, off_
     if (fd == -1)
         return -errno;
 
-    auto res = ::pread(fd, buf, size, offset);
+    std::byte* p_buf{reinterpret_cast<std::byte*>(buf)};
+    if (fi && fi->flags & O_DIRECT)
+        p_buf = reinterpret_cast<std::byte*>(std::aligned_alloc(512, size));
+
+    auto res = ::pread(fd, p_buf, size, offset);
     if (res == -1)
         res = -errno;
+
+    if (fi && fi->flags & O_DIRECT) {
+        std::memcpy(buf, p_buf, size);
+        std::free(p_buf);
+    }
 
     if (!fi)
         ::close(fd);
@@ -172,9 +182,20 @@ ssize_t FileSystemReflector::write(char const* path, char const* buf, size_t siz
     if (fd == -1)
         return -errno;
 
-    auto res = ::pwrite(fd, buf, size, offset);
+    std::byte const* p_buf{reinterpret_cast<std::byte const*>(buf)};
+    std::byte* aligned_buf{nullptr};
+    if (fi && fi->flags & O_DIRECT) {
+        aligned_buf = reinterpret_cast<std::byte*>(std::aligned_alloc(512, size));
+        std::memcpy(aligned_buf, buf, size);
+        p_buf = aligned_buf;
+    }
+
+    auto res = ::pwrite(fd, p_buf, size, offset);
     if (res == -1)
         res = -errno;
+
+    if (fi && fi->flags & O_DIRECT)
+        std::free(aligned_buf);
 
     if (!fi)
         ::close(fd);

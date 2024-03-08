@@ -44,5 +44,5 @@ target_link_libraries(multifs PRIVATE
     Boost::headers
     ${CMAKE_DL_LIBS})
 
-target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=34)
+target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=35)
 target_include_directories(multifs PRIVATE ${CMAKE_CURRENT_LIST_DIR})

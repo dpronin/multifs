@@ -4,7 +4,7 @@ project(multifs
         LANGUAGES CXX C
         DESCRIPTION "Multi File System")
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 

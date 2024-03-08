@@ -51,11 +51,24 @@ std::unique_ptr<IFileSystem> make_bfs(app_params const& params)
     std::ranges::transform(params.mpts, std::back_inserter(fss), [](auto const& mp) {
         return std::make_unique<FileSystemReflector>(make_absolute_normal(mp));
     });
-    if (1 == params.mpts.size())
+
+    bool need_thread_safety = false;
+
+    if (1 == params.mpts.size()) {
         fs = std::move(fss.front());
-    else
-        fs = std::make_unique<ThreadSafeAccessFileSystem>(
-            std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fss.begin()), std::make_move_iterator(fss.end())));
+    } else {
+        fs = std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fss.begin()), std::make_move_iterator(fss.end()));
+        need_thread_safety = true;
+    }
+
+    if (auto const& logp = params.logp; !logp.empty()) {
+        fs = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
+        need_thread_safety = true;
+    }
+
+    if (need_thread_safety)
+        fs = std::make_unique<ThreadSafeAccessFileSystem>(std::move(fs));
+
     return fs;
 }
 
@@ -223,10 +236,7 @@ int main(fuse_args args, app_params const& params)
         assert(fuse_opt_add_arg(&args, "--help") == 0);
         args.argv[0][0] = '\0';
     } else {
-        auto bfs = make_bfs(params);
-        if (auto const& logp = params.logp; !logp.empty())
-            bfs = std::make_unique<LoggedFileSystem>(std::move(bfs), logp);
-        fs = make_fs_noexcept(std::move(bfs));
+        fs = make_fs_noexcept(make_bfs(params));
     }
 
     return fuse_main(args.argc, args.argv, &getops(), fs.release());

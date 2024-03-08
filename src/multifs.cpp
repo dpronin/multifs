@@ -57,12 +57,12 @@ std::unique_ptr<IFileSystem> make_bfs(app_params const& params)
     if (1 == params.mpts.size()) {
         fs = std::move(fss.front());
     } else {
-        fs = std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fss.begin()), std::make_move_iterator(fss.end()));
+        fs                 = std::make_unique<MultiFileSystem>(getuid(), getgid(), std::make_move_iterator(fss.begin()), std::make_move_iterator(fss.end()));
         need_thread_safety = true;
     }
 
     if (auto const& logp = params.logp; !logp.empty()) {
-        fs = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
+        fs                 = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
         need_thread_safety = true;
     }
 
@@ -142,23 +142,12 @@ int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, s
 
 void* init(struct fuse_conn_info* conn, struct fuse_config* cfg) noexcept
 {
-    // #ifndef NDEBUG
-    //     out << "init: debug " << cfg->debug << std::endl;
-    // #endif
-
     cfg->kernel_cache = 1;
 
     return fs_noexcept_ptr();
 }
 
-void destroy(void* private_data) noexcept
-{
-    // #ifndef NDEBUG
-    //     out << "destroy: private_data " << private_data << std::endl;
-    // #endif
-
-    destroy_fs_noexcept(to_fs_noexcept_ptr(private_data));
-}
+void destroy(void* private_data) noexcept { destroy_fs_noexcept(to_fs_noexcept_ptr(private_data)); }
 
 int access(char const* path, int mask) noexcept { return fs_noexcept_ref().access(path, mask); }
 

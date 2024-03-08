@@ -1,5 +1,6 @@
 #include "multi_file_system.hpp"
 
+#include <cassert>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -73,6 +74,9 @@ void MultiFileSystem::statvs_init() noexcept
 
 int MultiFileSystem::getattr(char const* path, struct stat* stbuf, struct fuse_file_info* /*fi*/) const
 {
+    assert(path);
+    assert(stbuf);
+
     std::memset(stbuf, 0, sizeof(struct stat));
 
     if (std::strcmp(path, "/") == 0) {
@@ -118,9 +122,12 @@ int MultiFileSystem::getattr(char const* path, struct stat* stbuf, struct fuse_f
 
 int MultiFileSystem::readlink(char const* path, char* buf, size_t size) const
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::LinkReader{buf, size}, *it->second);
 }
 
@@ -142,10 +149,18 @@ int MultiFileSystem::rmdir(char const* path)
     return -EINVAL;
 }
 
-int MultiFileSystem::symlink(char const* from, char const* to) { return inodes_.emplace(to, std::make_shared<INode>(Symlink{from})).second ? 0 : -EEXIST; }
+int MultiFileSystem::symlink(char const* from, char const* to)
+{
+    assert(to);
+
+    return inodes_.emplace(to, std::make_shared<INode>(Symlink{from})).second ? 0 : -EEXIST;
+}
 
 int MultiFileSystem::rename(char const* from, char const* to, unsigned int flags)
 {
+    assert(from);
+    assert(to);
+
     auto from_it = inodes_.find(from);
     if (inodes_.end() == from_it)
         return -ENOENT;
@@ -173,22 +188,32 @@ int MultiFileSystem::rename(char const* from, char const* to, unsigned int flags
 
 int MultiFileSystem::link(char const* from, char const* to)
 {
+    assert(from);
+    assert(to);
+
     auto from_it = inodes_.find(from);
     if (inodes_.end() == from_it)
         return -ENOENT;
+
     return inodes_.emplace(to, from_it->second).second ? 0 : -EEXIST;
 }
 
 int MultiFileSystem::access(char const* path, int mask) const
 {
+    assert(path);
+
     if (std::strcmp(path, "/") == 0 || std::strcmp(path + 1, ".") == 0 || std::strcmp(path + 1, "..") == 0 || inodes_.count(path))
         return 0;
+
     return -ENOENT;
 }
 
 int MultiFileSystem::readdir(
     char const* path, void* buf, fuse_fill_dir_t filler, off_t /*offset*/, struct fuse_file_info* /*fi*/, fuse_readdir_flags /*flags*/) const
 {
+    assert(path);
+    assert(buf);
+
     if (std::strcmp(path, "/") != 0)
         return -ENOENT;
 
@@ -206,6 +231,8 @@ int MultiFileSystem::readdir(
 
 int MultiFileSystem::unlink(char const* path)
 {
+    assert(path);
+
     if (std::strcmp(path, "/") == 0 || std::strcmp(path + 1, ".") == 0 || std::strcmp(path + 1, "..") == 0)
         return -EBUSY;
 
@@ -215,65 +242,93 @@ int MultiFileSystem::unlink(char const* path)
 
     auto const inode = std::move(it->second);
     inodes_.erase(it);
+
     return std::visit(__unlinker__, *inode);
 }
 
 int MultiFileSystem::chmod(char const* path, mode_t mode, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Chmodder{mode, fi}, *it->second);
 }
 
 int MultiFileSystem::chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Chowner{uid, gid, fi}, *it->second);
 }
 
 int MultiFileSystem::truncate(char const* path, off_t size, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Truncater{size, fi}, *it->second);
 }
 
 int MultiFileSystem::open(char const* path, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Opener{fi}, *it->second);
 }
 
 int MultiFileSystem::create(char const* path, mode_t mode, struct fuse_file_info* fi)
 {
+    assert(path);
     return inodes_.emplace(path, std::make_shared<INode>(File{std::string{path} + ".chunk", mode, fss_.begin(), fss_.end(), fi})).second ? 0 : -EEXIST;
 }
 
 ssize_t MultiFileSystem::read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const
 {
+    assert(path);
+    assert(buf);
+    assert(size > 0);
+
     auto const it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Reader{std::as_writable_bytes(std::span{buf, size}), offset, fi}, *it->second);
 }
 
 ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi)
 {
+    assert(path);
+    assert(buf);
+    assert(size > 0);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Writer{std::as_bytes(std::span{buf, size}), offset, fi}, *it->second);
 }
 
 int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const
 {
+    assert(path);
+    assert(stbuf);
+
     *stbuf = statvfs_;
+
     for (auto const& fs : fss_) {
         // clang-format off
         struct statvfs stbuf_leaf {};
@@ -287,31 +342,41 @@ int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const
         stbuf->f_ffree += stbuf_leaf.f_ffree;
         stbuf->f_favail += stbuf_leaf.f_favail;
     }
+
     return 0;
 }
 
 int MultiFileSystem::release(char const* path, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Releaser{fi}, *it->second);
 }
 
 int MultiFileSystem::fsync(char const* path, int isdatasync, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Fsyncer{isdatasync, fi}, *it->second);
 }
 
 #ifdef HAVE_UTIMENSAT
 int MultiFileSystem::utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(INodeUtimenser{ts, fi}, *it->second);
 }
 #endif // HAVE_UTIMENSAT
@@ -319,17 +384,23 @@ int MultiFileSystem::utimens(char const* path, const struct timespec ts[2], stru
 #ifdef HAVE_POSIX_FALLOCATE
 int MultiFileSystem::fallocate(char const* path, int mode, off_t offset, off_t length, struct fuse_file_info* fi)
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(INodeFallocater{mode, offset, length, fi}, *it->second);
 }
 #endif // HAVE_POSIX_FALLOCATE
 
 off_t MultiFileSystem::lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const
 {
+    assert(path);
+
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
+
     return std::visit(inode::Lseeker{off, whence, fi}, *it->second);
 }

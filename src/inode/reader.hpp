@@ -1,11 +1,14 @@
 #pragma once
 
+#include <cassert>
 #include <cerrno>
 #include <cstddef>
 
 #include <sys/types.h>
 
 #include <fuse.h>
+
+#include <span>
 
 #include "file.hpp"
 #include "symlink.hpp"
@@ -17,21 +20,20 @@ namespace multifs::inode
 class Reader
 {
 private:
-    char* buf_;
-    size_t size_;
+    std::span<std::byte> buf_;
     off_t offset_;
     struct fuse_file_info* fi_;
 
 public:
-    explicit Reader(char* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
+    explicit Reader(std::span<std::byte> buf, off_t offset, struct fuse_file_info* fi) noexcept
         : buf_(buf)
-        , size_(size)
         , offset_(offset)
         , fi_(fi)
     {
+        assert(!buf_.empty());
     }
 
-    ssize_t operator()(File const& file) const noexcept { return file.read(buf_, size_, offset_, fi_); }
+    ssize_t operator()(File const& file) const noexcept { return file.read(buf_, offset_, fi_); }
     ssize_t operator()(Symlink const&) const noexcept
     {
         // reading symlinks is impossible, their content must be read by readlink call

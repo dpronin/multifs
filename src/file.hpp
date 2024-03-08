@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <list>
 #include <memory>
-#include <stdexcept>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -35,8 +35,7 @@ public:
 
 private:
     struct Chunk {
-        size_t start_off;
-        size_t end_off;
+        std::pair<size_t, size_t> offset_range;
         std::shared_ptr<IFileSystem> fs;
     };
 
@@ -74,8 +73,8 @@ public:
     int chown(uid_t uid, gid_t gid, struct fuse_file_info* fi) noexcept;
     int truncate(size_t new_size, struct fuse_file_info* fi);
     int open(struct fuse_file_info* fi);
-    ssize_t write(char const* buf, size_t size, off_t offset, struct fuse_file_info* fi);
-    ssize_t read(char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept;
+    ssize_t write(std::span<std::byte const> buf, off_t offset, struct fuse_file_info* fi);
+    ssize_t read(std::span<std::byte> buf, off_t offset, struct fuse_file_info* fi) const noexcept;
     int release(struct fuse_file_info* fi) noexcept;
     int fsync(int isdatasync, struct fuse_file_info* fi) noexcept;
 

@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <limits>
-#include <system_error>
+#include <ranges>
 
 #include <fuse.h>
 
@@ -171,118 +171,119 @@ off_t File::fallocate(int mode, off_t offset, off_t length, struct fuse_file_inf
 }
 #endif
 
-ssize_t File::write(char const* buf, size_t size, off_t offset, struct fuse_file_info* fi)
+ssize_t File::write(std::span<std::byte const> buf, off_t offset, struct fuse_file_info* fi)
 {
-    ssize_t res = 0;
-
-    size_t const initial_offset = offset = std::min(static_cast<size_t>(offset), desc_.size);
+    ssize_t wb{0};
 
     std::vector<fuse_file_info>* v{nullptr};
     if (fi && 0 != fi->fh)
         v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
 
-    for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const& chunk) { return offset < chunk.end_off; });
-         0 != size && chunks_.end() != chunk_it;
-         ++chunk_it) {
+    if (buf.empty())
+        return 0;
 
-        fuse_file_info mfi{};
-        if (v) {
-            mfi.fh    = (*v)[chunk_it - chunks_.begin()].fh;
-            mfi.flags = fi->flags;
+    for (auto chunk_it = std::ranges::upper_bound(chunks_, offset, std::less<>{}, [](auto const& chunk) { return chunk.offset_range.second; });
+         wb < buf.size();) {
+
+        if (chunks_.end() == chunk_it) {
+            if (fss_.end() == fs_next_it_)
+                return -ENOSPC;
+
+            chunks_.push_back({.offset_range = {static_cast<size_t>(offset), std::numeric_limits<size_t>::max()}, .fs = *fs_next_it_++});
+
+            chunk_it = chunks_.end() - 1;
+            if (chunks_.begin() < chunk_it)
+                chunk_it[-1].offset_range.second = chunk_it->offset_range.first;
+
+            fuse_file_info mfi{};
+            if (v)
+                mfi.flags = (*v)[chunk_it - chunks_.begin()].flags;
+
+            if (auto const r = chunk_it->fs->create(path_.c_str(), desc_.mode, fi ? &mfi : nullptr)) {
+                chunks_.erase(chunk_it);
+                return r;
+            }
+
+            if (v)
+                (*v)[chunk_it - chunks_.begin()].fh = mfi.fh;
         }
 
-        auto const size_to_write = std::min(size, chunk_it->end_off - offset);
+        for (; wb < buf.size() && chunks_.end() != chunk_it; ++chunk_it) {
+            assert(chunk_it->offset_range.first <= offset && offset < chunk_it->offset_range.second);
 
-        auto const r = chunk_it->fs->write(path_.c_str(), buf, size_to_write, offset - chunk_it->start_off, fi ? &mfi : nullptr);
-        if (r < 0) {
-            if (-ENOSPC == r)
-                break;
-            return r;
-        } else if (size_to_write != r && chunk_it != std::prev(chunks_.end())) {
-            return res;
+            fuse_file_info mfi{};
+            if (v) {
+                mfi.fh    = (*v)[chunk_it - chunks_.begin()].fh;
+                mfi.flags = fi->flags;
+            }
+
+            auto const chunk{buf.subspan(wb, std::min(buf.size() - wb, chunk_it->offset_range.second - offset))};
+
+            auto const r = chunk_it->fs->write(
+                path_.c_str(),
+                reinterpret_cast<char const*>(chunk.data()),
+                chunk.size(),
+                offset - chunk_it->offset_range.first,
+                fi ? &mfi : nullptr);
+            if (r < 0) {
+                if (-ENOSPC == r && (chunks_.end() - 1 == chunk_it))
+                    continue;
+                return r;
+            }
+
+            wb += r;
+            offset += r;
+
+            desc_.size = std::max(desc_.size, static_cast<size_t>(offset));
+
+            if (r < chunk.size())
+                return wb;
         }
-
-        res += r;
-        offset += r;
-        buf += r;
-        size -= r;
     }
 
-    while (0 != size && fs_next_it_ != fss_.end()) {
-        chunks_.push_back(Chunk{static_cast<size_t>(offset), std::numeric_limits<size_t>::max(), *fs_next_it_++});
-        auto chunk_it = chunks_.end() - 1;
-        if (chunks_.size() >= 2)
-            chunk_it[-1].end_off = chunk_it->start_off;
-
-        fuse_file_info mfi{};
-        if (v)
-            mfi.flags = (*v)[chunk_it - chunks_.begin()].flags;
-
-        if (chunk_it->fs->create(path_.c_str(), desc_.mode, fi ? &mfi : nullptr)) {
-            chunks_.erase(chunk_it);
-            break;
-        }
-
-        if (v)
-            (*v)[chunk_it - chunks_.begin()].fh = mfi.fh;
-
-        if (fi)
-            mfi.flags = fi->flags;
-
-        auto const r = chunk_it->fs->write(path_.c_str(), buf, size, 0, fi ? &mfi : nullptr);
-        if (r < 0) {
-            if (-ENOSPC == r)
-                continue;
-            return r;
-        }
-
-        res += r;
-        offset += r;
-        buf += r;
-        size -= r;
-    }
-
-    if (res > 0) {
-        desc_.size = std::max(desc_.size, static_cast<decltype(desc_.size)>(initial_offset + res));
-    }
-
-    return res;
+    return wb;
 }
 
-ssize_t File::read(char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const noexcept
+ssize_t File::read(std::span<std::byte> buf, off_t offset, struct fuse_file_info* fi) const noexcept
 {
-    ssize_t res = 0;
+    ssize_t rb{0};
 
-    offset = std::min(static_cast<size_t>(offset), desc_.size);
-    size   = std::min(size, desc_.size - offset);
-
-    std::vector<fuse_file_info>* v;
+    std::vector<fuse_file_info>* v{nullptr};
     if (fi && 0 != fi->fh)
         v = reinterpret_cast<std::vector<fuse_file_info>*>(fi->fh);
 
-    for (auto chunk_it = std::upper_bound(chunks_.begin(), chunks_.end(), offset, [](off_t offset, auto const& chunk) { return offset < chunk.end_off; });
-         0 != size && chunks_.end() != chunk_it;
-         ++chunk_it) {
+    offset = std::min(static_cast<size_t>(offset), desc_.size);
+    buf    = buf.subspan(0, std::min(buf.size(), desc_.size - offset));
 
-        fuse_file_info mfi{};
-        if (v) {
-            mfi.fh    = (*v)[chunk_it - chunks_.begin()].fh;
-            mfi.flags = fi->flags;
+    if (!buf.empty()) {
+        auto chunk_it = std::ranges::upper_bound(chunks_, offset, std::less<>{}, [](auto const& chunk) { return chunk.offset_range.second; });
+        for (; rb < buf.size(); ++chunk_it) {
+            assert(chunks_.end() != chunk_it);
+            assert(chunk_it->offset_range.first <= offset && offset < chunk_it->offset_range.second);
+
+            fuse_file_info mfi{};
+            if (v) {
+                mfi.fh    = (*v)[chunk_it - chunks_.begin()].fh;
+                mfi.flags = fi->flags;
+            }
+
+            auto const chunk{buf.subspan(rb, std::min(buf.size() - rb, chunk_it->offset_range.second - offset))};
+
+            auto const r =
+                chunk_it->fs
+                    ->read(path_.c_str(), reinterpret_cast<char*>(chunk.data()), chunk.size(), offset - chunk_it->offset_range.first, fi ? &mfi : nullptr);
+            if (r < 0)
+                return r;
+
+            rb += r;
+            offset += r;
+
+            if (r < chunk.size())
+                return rb;
         }
-
-        auto const size_to_read = std::min(size, chunk_it->end_off - offset);
-        auto const r            = chunk_it->fs->read(path_.c_str(), buf, size_to_read, offset - chunk_it->start_off, fi ? &mfi : nullptr);
-        if (r < 0)
-            return r;
-        res += r;
-        offset += r;
-        buf += r;
-        size -= r;
-        if (size_to_read != r)
-            return res;
     }
 
-    return res;
+    return rb;
 }
 
 off_t File::lseek(off_t off, int whence, struct fuse_file_info* /*fi*/) const noexcept

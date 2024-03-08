@@ -1,6 +1,5 @@
 #include "multi_file_system.hpp"
 
-#include <cassert>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -12,8 +11,8 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <iterator>
 #include <memory>
+#include <span>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -237,7 +236,7 @@ int MultiFileSystem::chown(char const* path, uid_t uid, gid_t gid, struct fuse_f
 
 int MultiFileSystem::truncate(char const* path, off_t size, struct fuse_file_info* fi)
 {
-    auto it = inodes_.find(path + 1);
+    auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
     return std::visit(inode::Truncater{size, fi}, *it->second);
@@ -261,7 +260,7 @@ ssize_t MultiFileSystem::read(char const* path, char* buf, size_t size, off_t of
     auto const it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(inode::Reader{buf, size, offset, fi}, *it->second);
+    return std::visit(inode::Reader{std::as_writable_bytes(std::span{buf, size}), offset, fi}, *it->second);
 }
 
 ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi)
@@ -269,7 +268,7 @@ ssize_t MultiFileSystem::write(char const* path, char const* buf, size_t size, o
     auto it = inodes_.find(path);
     if (inodes_.end() == it)
         return -ENOENT;
-    return std::visit(inode::Writer{buf, size, offset, fi}, *it->second);
+    return std::visit(inode::Writer{std::as_bytes(std::span{buf, size}), offset, fi}, *it->second);
 }
 
 int MultiFileSystem::statfs(char const* path, struct statvfs* stbuf) const

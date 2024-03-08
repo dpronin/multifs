@@ -1,6 +1,5 @@
 #include "file_system_reflector.hpp"
 
-#include <cassert>
 #include <cerrno>
 #include <cstddef>
 #include <cstring>
@@ -12,14 +11,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
 #include <fuse.h>
 
 #include "passthrough_helpers.hpp"
-#include "utilities.hpp"
 
 using namespace multifs;
 

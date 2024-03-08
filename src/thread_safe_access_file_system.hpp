@@ -33,13 +33,13 @@ public:
 
     int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->getattr(path, stbuf, fi);
     }
 
     int readlink(char const* path, char* buf, size_t size) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->readlink(path, buf, size);
     }
 
@@ -81,13 +81,13 @@ public:
 
     int access(char const* path, int mask) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->access(path, mask);
     }
 
     int readdir(char const* path, void* buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* fi, fuse_readdir_flags flags) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->readdir(path, buf, filler, offset, fi, flags);
     }
 
@@ -129,7 +129,7 @@ public:
 
     ssize_t read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->read(path, buf, size, offset, fi);
     }
 
@@ -141,7 +141,7 @@ public:
 
     int statfs(char const* path, struct statvfs* stbuf) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->statfs(path, stbuf);
     }
 
@@ -175,7 +175,7 @@ public:
 
     off_t lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const override
     {
-        std::shared_lock g{lock_};
+        std::lock_guard g{lock_};
         return fs_->lseek(path, off, whence, fi);
     }
 };

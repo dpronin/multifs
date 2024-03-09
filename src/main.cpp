@@ -29,7 +29,9 @@ enum {
     KEY_VALUELESS_QTY,
     /* Valueful keys */
     KEY_FSS = KEY_VALUELESS_QTY,
+#ifndef NDEBUG
     KEY_LOG,
+#endif
     KEY_VALUEFUL_QTY,
 };
 
@@ -37,7 +39,9 @@ const struct fuse_opt multifs_option_desc[] = {
     FUSE_OPT_KEY("--help", KEY_HELP),
     FUSE_OPT_KEY("-h", KEY_HELP),
     FUSE_OPT_KEY("--fss=", KEY_FSS),
+#ifndef NDEBUG
     FUSE_OPT_KEY("--log=", KEY_LOG),
+#endif
     FUSE_OPT_END,
 };
 
@@ -49,8 +53,8 @@ try {
         if (it->value < KEY_VALUELESS_QTY) {
             switch (it->value) {
                 case KEY_HELP:
-                    params.show_help = 1;
-                    break;
+                    params.show_help = true;
+                    return 0;
                 default:
                     break;
             }
@@ -64,9 +68,11 @@ try {
                     std::ranges::move(mpts, std::back_inserter(params.mpts));
                     return 0;
                 }
+#ifndef NDEBUG
                 case KEY_LOG:
                     params.logp = svarg;
                     return 0;
+#endif
                 default:
                     break;
             }

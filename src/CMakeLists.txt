@@ -24,7 +24,6 @@ add_executable(multifs
     inode/unlinker.hpp
     inode/utimenser.hpp
     inode/writer.hpp
-    logged_file_system.hpp
     main.cpp
     multi_file_system.cpp
     multi_file_system.hpp
@@ -36,6 +35,7 @@ add_executable(multifs
     symlink.hpp
     thread_safe_access_file_system.hpp
     wrap.hpp
+    $<$<CONFIG:Debug>:logged_file_system.hpp>
 )
 
 target_link_libraries(multifs PRIVATE

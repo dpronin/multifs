@@ -36,8 +36,10 @@ void show_help(std::string_view progname)
     std::cout << "Multi File-system specific options:\n"
               << "    --fss=<path1>:<path2>:<path3>:...    paths to mount points to "
                  "combine them within the multifs\n"
+#ifndef NDEBUG
               << "    --log=<path>                         path to a file where multifs "
                  "will log operations\n"
+#endif
               << "\n";
     std::cout.flush();
 }
@@ -52,7 +54,8 @@ std::unique_ptr<IFileSystem> make_bfs(app_params const& params)
         return std::make_unique<FileSystemReflector>(make_absolute_normal(mp));
     });
 
-    bool need_thread_safety = false;
+    bool log_enabled{false};
+    bool need_thread_safety{false};
 
     if (1 == params.mpts.size()) {
         fs = std::move(fss.front());
@@ -61,13 +64,21 @@ std::unique_ptr<IFileSystem> make_bfs(app_params const& params)
         need_thread_safety = true;
     }
 
+#ifndef NDEBUG
     if (auto const& logp = params.logp; !logp.empty()) {
         fs                 = std::make_unique<LoggedFileSystem>(std::move(fs), logp);
+        log_enabled        = true;
         need_thread_safety = true;
     }
+#endif
 
-    if (need_thread_safety)
-        fs = std::make_unique<ThreadSafeAccessFileSystem>(std::move(fs));
+    if (need_thread_safety) {
+        if (log_enabled) {
+            fs = std::make_unique<ThreadSafeAccessFileSystem<LockExclusive>>(std::move(fs));
+        } else {
+            fs = std::make_unique<ThreadSafeAccessFileSystem<RWLock>>(std::move(fs));
+        }
+    }
 
     return fs;
 }
@@ -219,10 +230,11 @@ int main(fuse_args args, app_params const& params)
     std::unique_ptr<FileSystemNoexcept, decltype(&destroy_fs_noexcept)> fs{nullptr, destroy_fs_noexcept};
 
     if (params.show_help || params.mpts.empty()) {
-        if (params.mpts.empty())
+        if (!params.show_help && params.mpts.empty())
             std::cerr << "there are no a single FS to combine within multifs\n";
         show_help(args.argv[0]);
-        assert(fuse_opt_add_arg(&args, "--help") == 0);
+        auto const rc = fuse_opt_add_arg(&args, "--help");
+        assert(rc == 0);
         args.argv[0][0] = '\0';
     } else {
         fs = make_fs_noexcept(make_bfs(params));

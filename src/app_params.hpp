@@ -7,9 +7,11 @@ namespace multifs
 {
 
 struct app_params {
-    int show_help;
+    bool show_help;
     std::list<std::filesystem::path> mpts; ///< Mount points
-    std::filesystem::path logp;            ///< Log path
+#ifndef NDEBUG
+    std::filesystem::path logp; ///< Log path
+#endif
 };
 
 } // namespace multifs

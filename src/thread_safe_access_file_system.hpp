@@ -10,10 +10,41 @@
 namespace multifs
 {
 
+class LockExclusive
+{
+public:
+    void lock() { m_.lock(); }
+    void unlock() { m_.unlock(); }
+    bool try_lock() { return m_.try_lock(); }
+
+    void lock_shared() { lock(); }
+    void unlock_shared() { unlock(); }
+    bool try_lock_shared() { return try_lock(); }
+
+private:
+    std::mutex m_;
+};
+
+class RWLock
+{
+public:
+    void lock() { m_.lock(); }
+    void unlock() { m_.unlock(); }
+    bool try_lock() { return m_.try_lock(); }
+
+    void lock_shared() { m_.lock_shared(); }
+    void unlock_shared() { m_.unlock_shared(); }
+    bool try_lock_shared() { return m_.try_lock_shared(); }
+
+private:
+    std::shared_mutex m_;
+};
+
+template <typename Lock>
 class ThreadSafeAccessFileSystem final : public IFileSystem
 {
 private:
-    mutable std::shared_mutex lock_;
+    mutable Lock lock_;
     std::shared_ptr<IFileSystem> fs_;
 
 public:

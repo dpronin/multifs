@@ -104,9 +104,14 @@ auto* fs_noexcept_ptr() noexcept { return to_fs_noexcept_ptr(fuse_private_data_p
 
 auto& fs_noexcept_ref() noexcept { return *fs_noexcept_ptr(); }
 
-int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().getattr(path, stbuf, fi); }
+int getattr(char const* path, struct stat* stbuf, struct fuse_file_info* fi) noexcept
+{
+    assert(stbuf);
 
-int readlink(char const* path, char* buf, size_t size) noexcept { return fs_noexcept_ref().readlink(path, buf, size); }
+    return fs_noexcept_ref().getattr(path, *stbuf, fi);
+}
+
+int readlink(char const* path, char* buf, size_t size) noexcept { return fs_noexcept_ref().readlink(path, {buf, size}); }
 
 int mknod(char const* path, mode_t mode, dev_t rdev) noexcept { return fs_noexcept_ref().mknod(path, mode, rdev); }
 
@@ -132,15 +137,20 @@ int open(char const* path, struct fuse_file_info* fi) noexcept { return fs_noexc
 
 int read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
 {
-    return static_cast<int>(fs_noexcept_ref().read(path, buf, size, offset, fi));
+    return static_cast<int>(fs_noexcept_ref().read(path, {reinterpret_cast<std::byte*>(buf), size}, offset, fi));
 }
 
 int write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi) noexcept
 {
-    return static_cast<int>(fs_noexcept_ref().write(path, buf, size, offset, fi));
+    return static_cast<int>(fs_noexcept_ref().write(path, {reinterpret_cast<std::byte const*>(buf), size}, offset, fi));
 }
 
-int statfs(char const* path, struct statvfs* stbuf) noexcept { return fs_noexcept_ref().statfs(path, stbuf); }
+int statfs(char const* path, struct statvfs* stbuf) noexcept
+{
+    assert(stbuf);
+
+    return fs_noexcept_ref().statfs(path, *stbuf);
+}
 
 int release(char const* path, struct fuse_file_info* fi) noexcept { return fs_noexcept_ref().release(path, fi); }
 

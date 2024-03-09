@@ -219,12 +219,7 @@ ssize_t File::write(std::span<std::byte const> buf, off_t offset, struct fuse_fi
 
             auto const chunk{buf.subspan(wb, std::min(buf.size() - wb, chunk_it->offset_range.second - offset))};
 
-            auto const r = chunk_it->fs->write(
-                path_.c_str(),
-                reinterpret_cast<char const*>(chunk.data()),
-                chunk.size(),
-                offset - chunk_it->offset_range.first,
-                fi ? &mfi : nullptr);
+            auto const r = chunk_it->fs->write(path_.c_str(), chunk, offset - chunk_it->offset_range.first, fi ? &mfi : nullptr);
             if (r < 0) {
                 if (-ENOSPC == r && (chunks_.end() - 1 == chunk_it))
                     continue;
@@ -269,9 +264,7 @@ ssize_t File::read(std::span<std::byte> buf, off_t offset, struct fuse_file_info
 
             auto const chunk{buf.subspan(rb, std::min(buf.size() - rb, chunk_it->offset_range.second - offset))};
 
-            auto const r =
-                chunk_it->fs
-                    ->read(path_.c_str(), reinterpret_cast<char*>(chunk.data()), chunk.size(), offset - chunk_it->offset_range.first, fi ? &mfi : nullptr);
+            auto const r = chunk_it->fs->read(path_.c_str(), chunk, offset - chunk_it->offset_range.first, fi ? &mfi : nullptr);
             if (r < 0)
                 return r;
 

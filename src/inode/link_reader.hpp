@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cassert>
 #include <cerrno>
-#include <cstddef>
+#include <cstring>
+
+#include <span>
 
 #include <fuse.h>
 
@@ -15,14 +18,13 @@ namespace multifs::inode
 class LinkReader
 {
 private:
-    char* buf_;
-    size_t size_;
+    std::span<char> buf_;
 
 public:
-    explicit LinkReader(char* buf, size_t size) noexcept
+    explicit LinkReader(std::span<char> buf) noexcept
         : buf_(buf)
-        , size_(size)
     {
+        assert(!buf_.empty());
     }
 
     int operator()(File const&) const noexcept
@@ -33,7 +35,7 @@ public:
 
     int operator()(Symlink const& lnk) const noexcept
     {
-        std::strncpy(buf_, lnk.target().c_str(), size_);
+        std::strncpy(buf_.data(), lnk.target().c_str(), buf_.size());
         return 0;
     }
 

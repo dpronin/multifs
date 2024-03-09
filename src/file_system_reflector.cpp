@@ -31,23 +31,21 @@ FileSystemReflector::FileSystemReflector(std::filesystem::path mount_point)
         throw std::invalid_argument("mount point provided must be a path to a directory as a mount point");
 }
 
-int FileSystemReflector::getattr(char const* path, struct stat* stbuf, struct fuse_file_info* /*fi*/) const
+int FileSystemReflector::getattr(std::filesystem::path const& path, struct stat& stbuf, struct fuse_file_info* /*fi*/) const
 {
-    assert(path);
-    assert(stbuf);
+    assert(!path.empty());
 
-    auto const res = ::lstat(to_path(path).c_str(), stbuf);
+    auto const res = ::lstat(to_path(path).c_str(), &stbuf);
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::readlink(char const* path, char* buf, size_t size) const
+int FileSystemReflector::readlink(std::filesystem::path const& path, std::span<char> buf) const
 {
-    assert(path);
-    assert(buf);
-    assert(size > 0);
+    assert(!path.empty());
+    assert(!buf.empty());
 
-    auto const res = ::readlink(to_path(path).c_str(), buf, size - 1);
+    auto const res = ::readlink(to_path(path).c_str(), buf.data(), buf.size() - 1);
     if (res == -1)
         return -errno;
 
@@ -56,47 +54,47 @@ int FileSystemReflector::readlink(char const* path, char* buf, size_t size) cons
     return 0;
 }
 
-int FileSystemReflector::mknod(char const* path, mode_t mode, dev_t rdev)
+int FileSystemReflector::mknod(std::filesystem::path const& path, mode_t mode, dev_t rdev)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = mknod_wrapper(AT_FDCWD, to_path(path).c_str(), nullptr, mode, rdev);
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::mkdir(char const* path, mode_t mode)
+int FileSystemReflector::mkdir(std::filesystem::path const& path, mode_t mode)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = ::mkdir(to_path(path).c_str(), mode);
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::rmdir(char const* path)
+int FileSystemReflector::rmdir(std::filesystem::path const& path)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = ::rmdir(to_path(path).c_str());
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::symlink(char const* from, char const* to)
+int FileSystemReflector::symlink(std::filesystem::path const& from, std::filesystem::path const& to)
 {
-    assert(from);
-    assert(to);
+    assert(!from.empty());
+    assert(!to.empty());
 
     auto const res = ::symlink(to_path(from).c_str(), to_path(to).c_str());
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::rename(char const* from, char const* to, unsigned int flags)
+int FileSystemReflector::rename(std::filesystem::path const& from, std::filesystem::path const& to, unsigned int flags)
 {
-    assert(from);
-    assert(to);
+    assert(!from.empty());
+    assert(!to.empty());
 
     if (flags)
         return -EINVAL;
@@ -106,19 +104,19 @@ int FileSystemReflector::rename(char const* from, char const* to, unsigned int f
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::link(char const* from, char const* to)
+int FileSystemReflector::link(std::filesystem::path const& from, std::filesystem::path const& to)
 {
-    assert(from);
-    assert(to);
+    assert(!from.empty());
+    assert(!to.empty());
 
     auto const res = ::link(to_path(from).c_str(), to_path(to).c_str());
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::access(char const* path, int mask) const
+int FileSystemReflector::access(std::filesystem::path const& path, int mask) const
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = ::access(to_path(path).c_str(), mask);
 
@@ -126,9 +124,9 @@ int FileSystemReflector::access(char const* path, int mask) const
 }
 
 int FileSystemReflector::readdir(
-    char const* path, void* buf, fuse_fill_dir_t filler, off_t /*offset*/, struct fuse_file_info* /*fi*/, fuse_readdir_flags /*flags*/) const
+    std::filesystem::path const& path, void* buf, fuse_fill_dir_t filler, off_t /*offset*/, struct fuse_file_info* /*fi*/, fuse_readdir_flags /*flags*/) const
 {
-    assert(path);
+    assert(!path.empty());
     assert(buf);
 
     auto* dp = ::opendir(to_path(path).c_str());
@@ -149,43 +147,45 @@ int FileSystemReflector::readdir(
     return 0;
 }
 
-int FileSystemReflector::unlink(char const* path)
+int FileSystemReflector::unlink(std::filesystem::path const& path)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = ::unlink(to_path(path).c_str());
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::chmod(char const* path, mode_t mode, struct fuse_file_info* /*fi*/)
+int FileSystemReflector::chmod(std::filesystem::path const& path, mode_t mode, struct fuse_file_info* /*fi*/)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = ::chmod(to_path(path).c_str(), mode);
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::chown(char const* path, uid_t uid, gid_t gid, struct fuse_file_info* /*fi*/)
+int FileSystemReflector::chown(std::filesystem::path const& path, uid_t uid, gid_t gid, struct fuse_file_info* /*fi*/)
 {
-    assert(path);
+    assert(!path.empty());
+
     auto const res = ::lchown(to_path(path).c_str(), uid, gid);
+
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::truncate(char const* path, off_t size, struct fuse_file_info* fi)
+int FileSystemReflector::truncate(std::filesystem::path const& path, off_t size, struct fuse_file_info* fi)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const res = fi ? ::ftruncate(fi->fh, size) : ::truncate(to_path(path).c_str(), size);
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::open(char const* path, struct fuse_file_info* fi)
+int FileSystemReflector::open(std::filesystem::path const& path, struct fuse_file_info* fi)
 {
-    assert(path);
+    assert(!path.empty());
     assert(fi);
 
     auto const res = ::open(to_path(path).c_str(), fi->flags);
@@ -197,9 +197,9 @@ int FileSystemReflector::open(char const* path, struct fuse_file_info* fi)
     return 0;
 }
 
-int FileSystemReflector::create(char const* path, mode_t mode, struct fuse_file_info* fi)
+int FileSystemReflector::create(std::filesystem::path const& path, mode_t mode, struct fuse_file_info* fi)
 {
-    assert(path);
+    assert(!path.empty());
     assert(fi);
 
     auto const res = ::open(to_path(path).c_str(), fi->flags | O_CREAT, mode);
@@ -211,26 +211,25 @@ int FileSystemReflector::create(char const* path, mode_t mode, struct fuse_file_
     return 0;
 }
 
-ssize_t FileSystemReflector::read(char const* path, char* buf, size_t size, off_t offset, struct fuse_file_info* fi) const
+ssize_t FileSystemReflector::read(std::filesystem::path const& path, std::span<std::byte> buf, off_t offset, struct fuse_file_info* fi) const
 {
-    assert(path);
-    assert(buf);
-    assert(size > 0);
+    assert(!path.empty());
+    assert(!buf.empty());
 
     auto const fd = fi ? fi->fh : ::open(to_path(path).c_str(), O_RDONLY);
     if (fd == -1)
         return -errno;
 
-    std::byte* p_buf{reinterpret_cast<std::byte*>(buf)};
+    std::byte* p_buf{buf.data()};
     if (fi && (fi->flags & O_DIRECT))
-        p_buf = reinterpret_cast<std::byte*>(std::aligned_alloc(512, size));
+        p_buf = reinterpret_cast<std::byte*>(std::aligned_alloc(512, buf.size()));
 
-    auto res = ::pread(fd, p_buf, size, offset);
+    auto res = ::pread(fd, p_buf, buf.size(), offset);
     if (res == -1)
         res = -errno;
 
     if (fi && (fi->flags & O_DIRECT)) {
-        std::memcpy(buf, p_buf, size);
+        std::memcpy(buf.data(), p_buf, buf.size());
         std::free(p_buf);
     }
 
@@ -240,25 +239,24 @@ ssize_t FileSystemReflector::read(char const* path, char* buf, size_t size, off_
     return res;
 }
 
-ssize_t FileSystemReflector::write(char const* path, char const* buf, size_t size, off_t offset, struct fuse_file_info* fi)
+ssize_t FileSystemReflector::write(std::filesystem::path const& path, std::span<std::byte const> buf, off_t offset, struct fuse_file_info* fi)
 {
-    assert(path);
-    assert(buf);
-    assert(size > 0);
+    assert(!path.empty());
+    assert(!buf.empty());
 
     auto const fd = fi ? fi->fh : ::open(to_path(path).c_str(), O_WRONLY);
     if (fd == -1)
         return -errno;
 
-    std::byte const* p_buf{reinterpret_cast<std::byte const*>(buf)};
+    std::byte const* p_buf{buf.data()};
     std::byte* aligned_buf{nullptr};
     if (fi && (fi->flags & O_DIRECT)) {
-        aligned_buf = reinterpret_cast<std::byte*>(std::aligned_alloc(512, size));
-        std::memcpy(aligned_buf, buf, size);
+        aligned_buf = reinterpret_cast<std::byte*>(std::aligned_alloc(512, buf.size()));
+        std::memcpy(aligned_buf, buf.data(), buf.size());
         p_buf = aligned_buf;
     }
 
-    auto res = ::pwrite(fd, p_buf, size, offset);
+    auto res = ::pwrite(fd, p_buf, buf.size(), offset);
     if (res == -1)
         res = -errno;
 
@@ -271,17 +269,16 @@ ssize_t FileSystemReflector::write(char const* path, char const* buf, size_t siz
     return res;
 }
 
-int FileSystemReflector::statfs(char const* path, struct statvfs* stbuf) const
+int FileSystemReflector::statfs(std::filesystem::path const& path, struct statvfs& stbuf) const
 {
-    assert(path);
-    assert(stbuf);
+    assert(!path.empty());
 
-    auto const res = ::statvfs(to_path(path).c_str(), stbuf);
+    auto const res = ::statvfs(to_path(path).c_str(), &stbuf);
 
     return res == -1 ? -errno : 0;
 }
 
-int FileSystemReflector::release(char const*, struct fuse_file_info* fi)
+int FileSystemReflector::release(std::filesystem::path const& path [[maybe_unused]], struct fuse_file_info* fi)
 {
     assert(fi);
 
@@ -292,9 +289,9 @@ int FileSystemReflector::release(char const*, struct fuse_file_info* fi)
     return 0;
 }
 
-int FileSystemReflector::fsync(char const* path, int /*isdatasync*/, struct fuse_file_info* fi)
+int FileSystemReflector::fsync(std::filesystem::path const& path, int /*isdatasync*/, struct fuse_file_info* fi)
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const fd = fi ? fi->fh : ::open(to_path(path).c_str(), O_WRONLY);
     if (fd == -1)
@@ -311,9 +308,9 @@ int FileSystemReflector::fsync(char const* path, int /*isdatasync*/, struct fuse
 }
 
 #ifdef HAVE_UTIMENSAT
-int FileSystemReflector::utimens(char const* path, const struct timespec ts[2], struct fuse_file_info* /*fi*/)
+int FileSystemReflector::utimens(std::filesystem::path const& path, const struct timespec ts[2], struct fuse_file_info* /*fi*/)
 {
-    assert(path);
+    assert(!path.empty());
 
     /* don't use utime/utimes since they follow symlinks */
     auto const res = utimensat(0, to_path(path).c_str(), ts, AT_SYMLINK_NOFOLLOW);
@@ -323,9 +320,9 @@ int FileSystemReflector::utimens(char const* path, const struct timespec ts[2], 
 #endif // HAVE_UTIMENSAT
 
 #ifdef HAVE_POSIX_FALLOCATE
-int FileSystemReflector::fallocate(char const* path, int mode, off_t offset, off_t length, struct fuse_file_info* fi)
+int FileSystemReflector::fallocate(std::filesystem::path const& path, int mode, off_t offset, off_t length, struct fuse_file_info* fi)
 {
-    assert(path);
+    assert(!path.empty());
 
     if (mode)
         return -EOPNOTSUPP;
@@ -343,9 +340,9 @@ int FileSystemReflector::fallocate(char const* path, int mode, off_t offset, off
 }
 #endif // HAVE_POSIX_FALLOCATE
 
-off_t FileSystemReflector::lseek(char const* path, off_t off, int whence, struct fuse_file_info* fi) const
+off_t FileSystemReflector::lseek(std::filesystem::path const& path, off_t off, int whence, struct fuse_file_info* fi) const
 {
-    assert(path);
+    assert(!path.empty());
 
     auto const fd = fi ? fi->fh : ::open(to_path(path).c_str(), O_RDONLY);
     if (fd == -1)

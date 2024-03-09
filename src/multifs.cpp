@@ -241,7 +241,7 @@ int main(fuse_args args, app_params const& params)
 
     if (params.show_help || params.mpts.empty()) {
         if (!params.show_help && params.mpts.empty())
-            std::cerr << "there are no a single FS to combine within multifs\n";
+            std::cerr << "there is none of file systems to combine within multifs\n";
         show_help(args.argv[0]);
         auto const rc = fuse_opt_add_arg(&args, "--help");
         assert(rc == 0);

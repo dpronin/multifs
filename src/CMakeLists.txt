@@ -42,7 +42,8 @@ target_link_libraries(multifs PRIVATE
     libfuse::libfuse
     Threads::Threads
     Boost::headers
-    ${CMAKE_DL_LIBS})
+    ${CMAKE_DL_LIBS}
+)
 
 target_compile_definitions(multifs PRIVATE -DFUSE_USE_VERSION=35)
 target_include_directories(multifs PRIVATE ${CMAKE_CURRENT_LIST_DIR})
